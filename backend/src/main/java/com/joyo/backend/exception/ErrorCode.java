@@ -13,7 +13,17 @@ public enum ErrorCode {
     /** X-Joyo-Token 校验失败（Electron Main 与后端不一致或缺失） */
     TOKEN_INVALID(1003, "应用鉴权失败"),
     /** 后端内部错误 */
-    INTERNAL_ERROR(1500, "发生内部错误");
+    INTERNAL_ERROR(1500, "发生内部错误"),
+
+    // ===== 2xxx 连接与会话（rest-api.md 第 5 节） =====
+    /** 无法连接到数据库主机 */
+    CONNECT_FAILED(2001, "无法连接到主机，请检查地址与网络"),
+    /** 认证失败 */
+    AUTH_FAILED(2002, "用户名或密码错误"),
+    /** 连接超时 */
+    CONNECT_TIMEOUT(2003, "连接超时"),
+    /** 连接会话已失效 */
+    SESSION_INVALID(2004, "连接已断开，请重新连接");
 
     private final int code;
     private final String message;
