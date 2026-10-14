@@ -1,5 +1,8 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import path from 'node:path'
+import { registerConnectionsIpc } from './connections-ipc'
+import { SafeStorageCipher } from './safe-storage-cipher'
+import { ConnectionsStore, connectionsFilePath } from './secure-store'
 import { resolveBackend, type ResolvedBackend } from './sidecar'
 
 /**
@@ -55,6 +58,13 @@ app.whenReady().then(async () => {
       if (!backend) throw new Error('后端尚未就绪')
       return { baseUrl: backend.baseUrl, token: backend.token }
     })
+
+    // 连接配置持久化（spec-01）：userData/connections.json + safeStorage 加解密
+    const connectionsStore = new ConnectionsStore(
+      connectionsFilePath(app.getPath('userData')),
+      new SafeStorageCipher(),
+    )
+    registerConnectionsIpc(connectionsStore)
 
     createWindow()
   } catch (e) {

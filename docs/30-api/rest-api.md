@@ -53,6 +53,29 @@
 | `connections:delete` | R→M→R | 按 id 删除 |
 | `secure:decrypt` | R→M→R | 解密密码，仅用于编辑表单回填 |
 
+载荷契约（类型定义对应 `desktop/src/main/secure-store.ts`，前端镜像到 `frontend/src/types/ipc.d.ts`）：
+
+```ts
+// 列表项（所有通道的返回视图均不含 passwordEnc）
+interface ConnectionListItem {
+  id: string; name: string; host: string; port: number; username: string
+  defaultDatabase: string; sshTunnel: null
+  createdAt: string; updatedAt: string   // ISO-8601 UTC
+  hasPassword: boolean
+}
+
+// connections:save 入参（id 缺省 = 新建；password 留空 = 编辑时不修改原密码）
+interface SaveConnectionInput {
+  id?: string; name: string; host: string; port: number
+  username: string; password?: string; defaultDatabase?: string
+}
+
+// connections:delete 入参 id: string，返回 boolean（是否删除）
+// secure:decrypt 入参 id: string，返回 string | null（null = 连接不存在或解密失败）
+```
+
+约定：更新不存在的 id → handler 抛错（渲染层收到 rejected promise，message 为中文文案）。
+
 ### POST /connections/{connectionId}/session
 
 建立会话：后端按参数创建 HikariDataSource 并缓存（connectionId 为前端生成的 UUID）。

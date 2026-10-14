@@ -15,6 +15,7 @@
 - [x] 2026-10-15 backend 骨架：Spring Boot 3.3.5（Java 21、Log4j2）+ `/api/v1/health` + TokenAuthFilter + 统一响应/全局异常 + 7 个单测全部通过（`mvn test` BUILD SUCCESS）
 - [x] 2026-10-15 frontend 骨架：Vite 6 + Vue 3.5 + TS strict + Pinia + Router(hash) + `api/http.ts` 统一请求层（Token 注入/ApiError/BackendUnavailableError）+ 后端状态卡首页 + 6 个 vitest 单测；typecheck/test/build 全部通过
 - [x] 2026-10-15 desktop 骨架：Electron 33 主进程（sidecar 拉起：空闲端口/随机 Token/健康检查轮询/taskkill 进程树清理 + 开发直连 JOYO_DEV_BACKEND_URL）+ preload（contextBridge 暴露 getLaunchConfig）；sidecar 冒烟测试通过（spawn jar → code=0 → 1003 拦截 → 清理）
+- [x] 2026-10-15 【spec-01 任务 1】Main 侧 `secure-store.ts`（connections.json 原子写/损坏兜底/脱敏视图 + 密码 enc:v1 密文）+ `SafeStorageCipher` + 4 个 IPC 通道注册（list/save/delete/decrypt）+ 10 个 vitest 单测全过；IPC 载荷契约已登记 rest-api.md
 
 ## 关键决策记录
 
@@ -42,5 +43,5 @@
 
 ## 下一任务
 
-1. 切分支 `feat/spec-01-connection-manager`，按 spec-01 实现：Electron Main 侧 `secure-store.ts`（connections.json 读写 + safeStorage 加解密 + IPC 通道）→ 后端连接测试/会话接口 → 前端连接列表与编辑对话框
+1. 【spec-01 任务 2】后端连接接口：`POST /connections/test`（表单直测）+ `POST/DELETE /connections/{id}/session`（HikariDataSource 建池/销毁）+ 业务错误码 2001-2004 + Testcontainers 集成测试
 

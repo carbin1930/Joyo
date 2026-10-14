@@ -5,6 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const node_path_1 = __importDefault(require("node:path"));
+const connections_ipc_1 = require("./connections-ipc");
+const safe_storage_cipher_1 = require("./safe-storage-cipher");
+const secure_store_1 = require("./secure-store");
 const sidecar_1 = require("./sidecar");
 /**
  * Electron 主进程入口（docs/10-architecture/overview.md 第 2 节）：
@@ -54,6 +57,9 @@ electron_1.app.whenReady().then(async () => {
                 throw new Error('后端尚未就绪');
             return { baseUrl: backend.baseUrl, token: backend.token };
         });
+        // 连接配置持久化（spec-01）：userData/connections.json + safeStorage 加解密
+        const connectionsStore = new secure_store_1.ConnectionsStore((0, secure_store_1.connectionsFilePath)(electron_1.app.getPath('userData')), new safe_storage_cipher_1.SafeStorageCipher());
+        (0, connections_ipc_1.registerConnectionsIpc)(connectionsStore);
         createWindow();
     }
     catch (e) {
