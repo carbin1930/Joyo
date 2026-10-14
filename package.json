@@ -7,7 +7,9 @@
     "dev:frontend": "pnpm --filter frontend dev",
     "build:frontend": "pnpm --filter frontend build",
     "test:frontend": "pnpm --filter frontend test",
-    "typecheck:frontend": "pnpm --filter frontend typecheck"
+    "typecheck:frontend": "pnpm --filter frontend typecheck",
+    "build:desktop": "pnpm --filter desktop build",
+    "dev:desktop": "pnpm --filter desktop dev"
   },
   "engines": {
     "node": ">=20"
