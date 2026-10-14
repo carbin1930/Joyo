@@ -1,0 +1,26 @@
+# ===== 私有内容（不入库，见 docs/90-conventions/git-workflow.md 隐私检查） =====
+docs/private/
+.env
+.env.*
+*.local
+
+# ===== 依赖与构建产物 =====
+node_modules/
+dist/
+frontend/dist/
+desktop/dist/
+backend/target/
+release/
+*.jar
+!backend/.mvn/wrapper/maven-wrapper.jar
+
+# ===== 运行时数据 =====
+backend-runtime/
+*.log
+
+# ===== IDE / 系统 =====
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
