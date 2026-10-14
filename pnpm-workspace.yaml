@@ -1,0 +1,8 @@
+packages:
+  - frontend
+  - desktop
+
+# pnpm 12：允许运行安装脚本的依赖（旧版 package.json 的 pnpm 字段已失效）
+allowBuilds:
+  esbuild: true
+  vue-demi: true

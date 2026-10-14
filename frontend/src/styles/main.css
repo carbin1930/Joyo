@@ -1,0 +1,38 @@
+/* 主题 CSS 变量（coding-frontend.md 第 1 节），v1.0 深色主题在此扩展 */
+:root {
+  --joyo-primary: #2f6fed;
+  --joyo-success: #22a06b;
+  --joyo-danger: #d64545;
+  --joyo-warning: #e2a03f;
+
+  --joyo-bg: #f7f8fa;
+  --joyo-bg-card: #ffffff;
+  --joyo-bg-sidebar: #f0f2f5;
+  --joyo-border: #d8dce3;
+
+  --joyo-text: #24292f;
+  --joyo-text-muted: #7a828c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family:
+    'Segoe UI',
+    'Microsoft YaHei',
+    system-ui,
+    sans-serif;
+  font-size: 14px;
+  color: var(--joyo-text);
+  background: var(--joyo-bg);
+}
+
+#app {
+  height: 100%;
+}
