@@ -14,4 +14,10 @@ function getLaunchConfig(): Promise<{ baseUrl: string; token: string }> {
 
 contextBridge.exposeInMainWorld('joyo', {
   getLaunchConfig,
+  connections: {
+    list: () => ipcRenderer.invoke('connections:list'),
+    save: (input: unknown) => ipcRenderer.invoke('connections:save', input),
+    remove: (id: string) => ipcRenderer.invoke('connections:delete', id),
+    decryptPassword: (id: string) => ipcRenderer.invoke('secure:decrypt', id),
+  },
 })

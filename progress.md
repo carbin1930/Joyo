@@ -17,6 +17,7 @@
 - [x] 2026-10-15 desktop 骨架：Electron 33 主进程（sidecar 拉起：空闲端口/随机 Token/健康检查轮询/taskkill 进程树清理 + 开发直连 JOYO_DEV_BACKEND_URL）+ preload（contextBridge 暴露 getLaunchConfig）；sidecar 冒烟测试通过（spawn jar → code=0 → 1003 拦截 → 清理）
 - [x] 2026-10-15 【spec-01 任务 1】Main 侧 `secure-store.ts`（connections.json 原子写/损坏兜底/脱敏视图 + 密码 enc:v1 密文）+ `SafeStorageCipher` + 4 个 IPC 通道注册（list/save/delete/decrypt）+ 10 个 vitest 单测全过；IPC 载荷契约已登记 rest-api.md
 - [x] 2026-10-15 【spec-01 任务 2】后端连接接口：`POST /connections/test` + `POST/DELETE /connections/{id}/session`（HikariCP max=5/timeout 5s/惰性建池/首个连接探活）+ SQLException→2001/2002/2003 分类 + URL 路径编码；18 个测试全过（含 MockMvc controller 测试；Testcontainers 集成测试无 Docker 自动跳过）
+- [x] 2026-10-15 【spec-01 任务 3】前端连接管理 UI：preload 扩展 connections IPC 白名单 + `api/ipc.ts`/`api/connection.ts` + connection store（connect 流程：解密→建会话→绿点；无密码/解密失败/建会话失败的边界处理）+ ConnectionList（右键菜单/二次确认/复制连接）+ ConnectionDialog（测试连接/密码显隐/编辑留空不改密码）+ BaseDialog/ToastHost/use-toast；前端 12 个单测全过，typecheck/build 通过
 
 ## 关键决策记录
 
@@ -44,5 +45,6 @@
 
 ## 下一任务
 
-1. 【spec-01 任务 3】前端连接管理 UI：连接列表侧栏 + 编辑对话框（测试/保存/删除/双击连接）+ `api/connection.ts`（HTTP）+ `api/ipc.ts`（IPC 封装）+ Pinia store，联调端到端
+1. 【spec-01 任务 4（收尾）】Electron 实机端到端验收：按 spec-01 验收标准逐条核验（真实 MySQL 连接、重启后绿点/连接仍在、密码密文检查），通过后合入 main 并更新 spec 状态
+2. 之后进入 spec-02 库表浏览
 

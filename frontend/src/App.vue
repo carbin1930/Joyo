@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useBackendStore } from '@/stores/backend'
+import ConnectionList from '@/components/connection/ConnectionList.vue'
+import ToastHost from '@/components/ToastHost.vue'
 
 const backend = useBackendStore()
 
@@ -13,12 +15,13 @@ onMounted(() => {
   <div class="app-layout">
     <aside class="app-sidebar">
       <div class="app-logo">Joyo</div>
-      <!-- spec-01 连接管理将在此渲染连接列表 -->
-      <div class="sidebar-placeholder">连接列表（spec-01 实现）</div>
+      <!-- spec-01：连接管理（列表 + 新建 + 右键菜单） -->
+      <ConnectionList />
     </aside>
     <main class="app-main">
       <router-view />
     </main>
+    <ToastHost />
   </div>
 </template>
 
