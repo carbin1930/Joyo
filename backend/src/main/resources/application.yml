@@ -1,0 +1,15 @@
+server:
+  # 安全约定：只监听本机回环地址（docs/10-architecture/overview.md 第 4 节）
+  address: 127.0.0.1
+  # Electron Main 会通过 --server.port 传入随机空闲端口；18080 仅为本地开发默认值
+  port: 18080
+
+spring:
+  application:
+    name: joyo-backend
+
+joyo:
+  # Electron Main 每次启动生成随机 UUID 通过 --joyo.token 传入；
+  # 本地开发未设置环境变量时使用 dev-token（见 overview.md 第 2 节开发模式）
+  token: ${JOYO_TOKEN:dev-token}
+  app-version: 0.1.0

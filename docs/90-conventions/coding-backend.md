@@ -47,7 +47,7 @@ public class BizException extends RuntimeException {
 
 ## 5. 日志
 
-- 框架：SLF4J + Logback，输出到控制台（Electron Main 负责转发到文件）
+- 框架：**Log4j2**（用户指定）。Maven 配置：排除 `spring-boot-starter-web` 传递的 `spring-boot-starter-logging`，引入 `spring-boot-starter-log4j2`；配置文件 `log4j2.xml`；代码统一走 SLF4J API，输出到控制台（Electron Main 负责转发到文件）
 - 级别：连接建立/断开 INFO，SQL 执行 DEBUG（**日志不得包含密码与完整结果集**）
 - 异常日志必须带堆栈：`log.error("查询执行失败, connectionId={}", id, e)`
 
