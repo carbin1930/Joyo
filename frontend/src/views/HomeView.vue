@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useBackendStore } from '@/stores/backend'
+import { useConnectionStore } from '@/stores/connection'
 import { useSchemaStore } from '@/stores/schema'
 import TableDetail from '@/components/schema/TableDetail.vue'
+import QueryEditorView from '@/views/QueryEditorView.vue'
 import { zhCN } from '@/locales/zh-CN'
 
 const backend = useBackendStore()
 const schemaStore = useSchemaStore()
+const connections = useConnectionStore()
 
-/** 选中了表则主区显示表详情，否则显示首页状态卡 */
+/** 主区模式：选中表 → 表详情；已连接 → SQL 编辑器；否则首页状态卡 */
 const showTableDetail = computed(() => schemaStore.selectedTableLocation !== null)
+const connected = computed(() => connections.connectedIds.length > 0)
 
 onMounted(() => {
   void backend.check()
@@ -19,6 +23,7 @@ onMounted(() => {
 <template>
   <section class="home">
     <TableDetail v-if="showTableDetail" />
+    <QueryEditorView v-else-if="connected" />
     <template v-else>
       <h1 class="home-title">{{ zhCN.app.name }}</h1>
       <p class="home-subtitle">{{ zhCN.app.slogan }}</p>

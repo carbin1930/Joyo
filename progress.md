@@ -51,9 +51,11 @@
 - 分支事故教训：切新分支前必须确认基于最新 main；本次 spec-02 分支漏带 spec-01 收尾提交（CORS 修复），用 cherry-pick 补救。流程改进：切分支后立即 `git log main..HEAD --all --oneline` 核对基线
 - URLEncoder 是表单编码（空格→+），URL 路径需要 %20，用 `.replace("+", "%20")` 处理
 
+- [x] 2026-10-17 【spec-03 任务 2】前端 SQL 编辑器：`api/query.ts` + `query` store（草稿按连接隔离/多语句结果 Tab/错误 Tab/服务端分页）+ `MonacoEditor.vue`（sql 高亮、Ctrl+Enter 运行选中或光标语句、Ctrl+/ 注释）+ `QueryEditorView`（工具栏/行数限制/状态条）+ `ResultPanel`（SELECT 网格+NULL 样式+截断徽标+分页、DML/DDL 消息）；前端 24 个单测全过，typecheck/build 通过
+
 ## 下一任务
 
-1. 【spec-03 任务 2】前端 SQL 编辑器：Monaco 集成 + 查询执行 API + 结果面板（Tabulator 多语句 Tab、分页、NULL 样式、复制 CSV/TSV）+ query store，联调端到端
+1. 【spec-03 实机验收】编辑器执行 SELECT/UPDATE/DDL、多语句 Tab、截断徽标、翻页、Ctrl+Enter/Ctrl+/；通过后合入 main。剩余：spec-04 结果网格升级（复制 CSV/TSV、网格打磨）后 v0.1 收官
 
 - [x] 2026-10-17 【spec-02 任务 2】前端 schema 树 + 表详情：`schema` store（懒加载/展开缓存/选中联动/断开清树/200 条分块渲染）+ `SchemaTree`（过滤框/层级刷新/视图图标/行数估计）+ `TableDetail`（列/索引/DDL 三 Tab、DDL 复制）+ 连接成功自动激活树；前端 19 个单测全过，typecheck/build 通过
 
