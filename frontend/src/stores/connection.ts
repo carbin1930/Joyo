@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { connectionsIpc } from '@/api/ipc'
 import { closeSession, openSession } from '@/api/connection'
 import { toast } from '@/composables/use-toast'
+import { useSchemaStore } from '@/stores/schema'
 import type { ConnectionListItem, SaveConnectionInput } from '@/types/ipc'
 import type { SessionInfo } from '@/api/connection'
 import { zhCN } from '@/locales/zh-CN'
@@ -85,6 +86,8 @@ export const useConnectionStore = defineStore('connection', {
         this.sessions[id] = session
         this.connectedIds.push(id)
         toast('success', zhCN.connection.connected(session.serverVersion))
+        // 连接成功 → 激活该连接的对象树（spec-02）
+        void useSchemaStore().activate(id)
         return true
       } catch (e) {
         toast('error', e instanceof Error ? e.message : String(e))
@@ -98,6 +101,8 @@ export const useConnectionStore = defineStore('connection', {
       } finally {
         this.connectedIds = this.connectedIds.filter((c) => c !== id)
         delete this.sessions[id]
+        // 断开 → 清空对应对象树（spec-02 行为细节 6）
+        useSchemaStore().deactivate(id)
       }
     },
 

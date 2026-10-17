@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { useBackendStore } from '@/stores/backend'
 import ConnectionList from '@/components/connection/ConnectionList.vue'
+import SchemaTree from '@/components/schema/SchemaTree.vue'
 import ToastHost from '@/components/ToastHost.vue'
 
 const backend = useBackendStore()
@@ -15,8 +16,9 @@ onMounted(() => {
   <div class="app-layout">
     <aside class="app-sidebar">
       <div class="app-logo">Joyo</div>
-      <!-- spec-01：连接管理（列表 + 新建 + 右键菜单） -->
+      <!-- spec-01：连接管理；spec-02：对象树 -->
       <ConnectionList />
+      <SchemaTree />
     </aside>
     <main class="app-main">
       <router-view />

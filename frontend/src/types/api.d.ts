@@ -13,3 +13,52 @@ export interface HealthData {
   version: string
   uptimeSec: number
 }
+
+// ===== 元数据（docs/30-api/rest-api.md 元数据节，与后端 MetadataResponses 一一对应） =====
+
+export interface SchemaItem {
+  name: string
+  isSystem: boolean
+}
+
+export interface SchemasResponse {
+  schemas: SchemaItem[]
+}
+
+/** type ∈ BASE_TABLE | VIEW */
+export interface TableItem {
+  name: string
+  type: 'BASE_TABLE' | 'VIEW'
+  engine: string | null
+  comment: string
+  rowsEstimate: number | null
+}
+
+export interface TablesResponse {
+  tables: TableItem[]
+}
+
+export interface TableColumn {
+  name: string
+  dataType: string
+  length: number | null
+  nullable: boolean
+  key: string | null
+  defaultValue: string | null
+  extra: string | null
+  comment: string
+  ordinal: number
+}
+
+export interface TableIndex {
+  name: string
+  type: string
+  unique: boolean
+  columns: string[]
+}
+
+export interface TableDetailResponse {
+  columns: TableColumn[]
+  indexes: TableIndex[]
+  ddl: string
+}

@@ -23,7 +23,9 @@ public enum ErrorCode {
     /** 连接超时 */
     CONNECT_TIMEOUT(2003, "连接超时"),
     /** 连接会话已失效 */
-    SESSION_INVALID(2004, "连接已断开，请重新连接");
+    SESSION_INVALID(2004, "连接已断开，请重新连接"),
+    /** 元数据读取失败（含权限不足），rest-api.md 2101 */
+    METADATA_FAILED(2101, "元数据读取失败");
 
     private final int code;
     private final String message;

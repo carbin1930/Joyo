@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "description": "Joyo - 开源 MySQL 桌面客户端（Electron + Vue3 + Spring Boot Sidecar）",
   "scripts": {
+    "dev": "powershell -ExecutionPolicy Bypass -File scripts/dev.ps1",
     "dev:frontend": "pnpm --filter frontend dev",
     "build:frontend": "pnpm --filter frontend build",
     "test:frontend": "pnpm --filter frontend test",
