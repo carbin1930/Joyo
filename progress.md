@@ -46,6 +46,14 @@
 - Windows 杀后端进程树必须用 `taskkill /T /F`，直接 child.kill 会残留 java 进程；taskkill 强杀后子进程 exitCode 为 1，属正常
 - 【重要】渲染进程（localhost:5173 / file://）→ 后端（127.0.0.1）是跨域请求，后端必须配 CORS 且 TokenAuthFilter 必须放行 OPTIONS 预检（预检不带自定义头）；两者缺一都会表现成"后端服务异常"
 - PowerShell 5.1 执行含中文的 .ps1 必须保存为 UTF-8 with BOM，否则按 GBK 解析直接报语法错误
+- PowerShell 下 pnpm 会优先调 pnpm.ps1 被执行策略拦截：`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` 一劳永逸，或用 `pnpm.cmd`
+- 【重要】新版 JDK（21.0.6+）默认禁止 Mockito/ByteBuddy 动态自附加，Surefire 需加 `argLine=-Djdk.attach.allowAttachSelf=true -XX:+EnableDynamicAgentLoading`（已配置 pom.xml），否则所有 @MockBean 测试报 "Could not self-attach to current VM"
+- 分支事故教训：切新分支前必须确认基于最新 main；本次 spec-02 分支漏带 spec-01 收尾提交（CORS 修复），用 cherry-pick 补救。流程改进：切分支后立即 `git log main..HEAD --all --oneline` 核对基线
+- URLEncoder 是表单编码（空格→+），URL 路径需要 %20，用 `.replace("+", "%20")` 处理
+
+## 下一任务
+
+1. 【spec-03 任务 2】前端 SQL 编辑器：Monaco 集成 + 查询执行 API + 结果面板（Tabulator 多语句 Tab、分页、NULL 样式、复制 CSV/TSV）+ query store，联调端到端
 
 - [x] 2026-10-17 【spec-02 任务 2】前端 schema 树 + 表详情：`schema` store（懒加载/展开缓存/选中联动/断开清树/200 条分块渲染）+ `SchemaTree`（过滤框/层级刷新/视图图标/行数估计）+ `TableDetail`（列/索引/DDL 三 Tab、DDL 复制）+ 连接成功自动激活树；前端 19 个单测全过，typecheck/build 通过
 

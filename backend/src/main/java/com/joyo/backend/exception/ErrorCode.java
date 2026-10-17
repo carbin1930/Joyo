@@ -25,7 +25,13 @@ public enum ErrorCode {
     /** 连接会话已失效 */
     SESSION_INVALID(2004, "连接已断开，请重新连接"),
     /** 元数据读取失败（含权限不足），rest-api.md 2101 */
-    METADATA_FAILED(2101, "元数据读取失败");
+    METADATA_FAILED(2101, "元数据读取失败"),
+
+    // ===== 3xxx 查询执行（rest-api.md 第 5 节） =====
+    /** SQL 语法/执行错误，message 为 MySQL 原始错误 */
+    QUERY_ERROR(3001, "SQL 执行错误"),
+    /** 查询超时 */
+    QUERY_TIMEOUT(3002, "查询超时");
 
     private final int code;
     private final String message;
