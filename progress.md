@@ -44,6 +44,8 @@
 - vitest 2 内置 vite 5 类型，与 vite 6 冲突，须用 vitest 3；vitest node 环境无 `window`，浏览器 API 取值用 `globalThis`
 - Electron postinstall 需在 pnpm-workspace.yaml 的 `allowBuilds` 中加入 `electron: true`，否则二进制下载脚本被 pnpm 12 拦截
 - Windows 杀后端进程树必须用 `taskkill /T /F`，直接 child.kill 会残留 java 进程；taskkill 强杀后子进程 exitCode 为 1，属正常
+- 【重要】渲染进程（localhost:5173 / file://）→ 后端（127.0.0.1）是跨域请求，后端必须配 CORS 且 TokenAuthFilter 必须放行 OPTIONS 预检（预检不带自定义头）；两者缺一都会表现成"后端服务异常"
+- PowerShell 5.1 执行含中文的 .ps1 必须保存为 UTF-8 with BOM，否则按 GBK 解析直接报语法错误
 
 - [x] 2026-10-17 【spec-02 任务 2】前端 schema 树 + 表详情：`schema` store（懒加载/展开缓存/选中联动/断开清树/200 条分块渲染）+ `SchemaTree`（过滤框/层级刷新/视图图标/行数估计）+ `TableDetail`（列/索引/DDL 三 Tab、DDL 复制）+ 连接成功自动激活树；前端 19 个单测全过，typecheck/build 通过
 

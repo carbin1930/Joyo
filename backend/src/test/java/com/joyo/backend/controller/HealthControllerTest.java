@@ -48,4 +48,18 @@ class HealthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(1003));
     }
+
+    @Test
+    @DisplayName("跨域预检请求放行且不需要 Token（渲染进程源 → 后端）")
+    void 跨域预检放行() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .options("/api/v1/health")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "GET")
+                        .header("Access-Control-Request-Headers", "X-Joyo-Token"))
+                .andExpect(status().isOk())
+                .andExpect(result -> org.assertj.core.api.Assertions.assertThat(
+                        result.getResponse().getHeader("Access-Control-Allow-Origin"))
+                        .isNotNull());
+    }
 }

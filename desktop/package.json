@@ -1,5 +1,6 @@
 {
   "name": "desktop",
+  "productName": "joyo",
   "private": true,
   "version": "0.1.0",
   "description": "Joyo Electron 桌面壳（主进程 + preload）",

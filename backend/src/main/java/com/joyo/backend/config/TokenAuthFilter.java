@@ -37,6 +37,11 @@ public class TokenAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
+        // CORS 预检请求（OPTIONS）不带自定义头，必须放行，否则浏览器跨域握手失败
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            chain.doFilter(request, response);
+            return;
+        }
         String provided = request.getHeader(TOKEN_HEADER);
         if (expectedToken.equals(provided)) {
             chain.doFilter(request, response);
