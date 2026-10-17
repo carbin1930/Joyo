@@ -18,6 +18,8 @@
 - [x] 2026-10-15 【spec-01 任务 1】Main 侧 `secure-store.ts`（connections.json 原子写/损坏兜底/脱敏视图 + 密码 enc:v1 密文）+ `SafeStorageCipher` + 4 个 IPC 通道注册（list/save/delete/decrypt）+ 10 个 vitest 单测全过；IPC 载荷契约已登记 rest-api.md
 - [x] 2026-10-15 【spec-01 任务 2】后端连接接口：`POST /connections/test` + `POST/DELETE /connections/{id}/session`（HikariCP max=5/timeout 5s/惰性建池/首个连接探活）+ SQLException→2001/2002/2003 分类 + URL 路径编码；18 个测试全过（含 MockMvc controller 测试；Testcontainers 集成测试无 Docker 自动跳过）
 - [x] 2026-10-15 【spec-01 任务 3】前端连接管理 UI：preload 扩展 connections IPC 白名单 + `api/ipc.ts`/`api/connection.ts` + connection store（connect 流程：解密→建会话→绿点；无密码/解密失败/建会话失败的边界处理）+ ConnectionList（右键菜单/二次确认/复制连接）+ ConnectionDialog（测试连接/密码显隐/编辑留空不改密码）+ BaseDialog/ToastHost/use-toast；前端 12 个单测全过，typecheck/build 通过
+- [x] 2026-10-17 spec-01 实机验收通过（真实 MySQL 5.7.40 连通、密码密文、数据迁移），合入 main 并推送
+- [x] 2026-10-17 【spec-02 任务 1】后端元数据接口：`GET /connections/{id}/schemas`（系统库排序在后）+ `/schemas/{schema}/tables`（BASE_TABLE/VIEW/行数估计）+ `/schemas/{schema}/tables/{table}`（列/索引/DDL）；`SqlIdentifiers` 标识符转义（SHOW CREATE TABLE 防注入）；2101 错误码；28 个测试全过（新增 MetadataIT 真实 MySQL 集成测试，覆盖特殊字符表名/视图/无会话 2004/表不存在 2101）
 
 ## 关键决策记录
 
@@ -45,6 +47,5 @@
 
 ## 下一任务
 
-1. 【spec-01 任务 4（收尾）】Electron 实机端到端验收：按 spec-01 验收标准逐条核验（真实 MySQL 连接、重启后绿点/连接仍在、密码密文检查），通过后合入 main 并更新 spec 状态
-2. 之后进入 spec-02 库表浏览
+1. 【spec-02 任务 2】前端 schema 树 + 表详情：lazy 树组件（连接→库→表→列）+ 表详情三 Tab（列/索引/DDL）+ 过滤框 + 刷新，联调端到端
 
