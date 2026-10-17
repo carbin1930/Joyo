@@ -20,7 +20,6 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
 /**
  * 查询执行（spec-03，rest-api.md 查询执行节）：
  * - 多语句按 SqlSplitter 拆分后依次执行；任一失败 → 中止后续并整体失败（v0.1 不返回部分结果）

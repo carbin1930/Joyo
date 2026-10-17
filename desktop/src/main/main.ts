@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron'
 import path from 'node:path'
 import { registerConnectionsIpc } from './connections-ipc'
 import { SafeStorageCipher } from './safe-storage-cipher'
@@ -12,8 +12,62 @@ import { resolveBackend, type ResolvedBackend } from './sidecar'
  * 3. 退出时清理后端进程树
  */
 
+// 单实例锁：重复启动时聚焦已有窗口，避免双实例抢缓存/后端会话
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) {
+  app.quit()
+}
+
 let win: BrowserWindow | null = null
 let backend: ResolvedBackend | null = null
+
+/** 后端文件日志路径：打包模式在数据目录，开发模式在 backend/logs */
+function backendLogPath(): string {
+  return app.isPackaged
+    ? path.join(app.getPath('userData'), 'logs', 'backend.log')
+    : path.join(__dirname, '../../../backend/logs/backend.log')
+}
+
+/** 中文应用菜单（编辑角色保证快捷键在输入框/编辑器内生效） */
+function buildMenu(): void {
+  const template: Electron.MenuItemConstructorOptions[] = [
+    {
+      label: '文件',
+      submenu: [{ label: '退出', role: 'quit' }],
+    },
+    {
+      label: '编辑',
+      submenu: [
+        { label: '撤销', role: 'undo' },
+        { label: '重做', role: 'redo' },
+        { type: 'separator' },
+        { label: '剪切', role: 'cut' },
+        { label: '复制', role: 'copy' },
+        { label: '粘贴', role: 'paste' },
+        { label: '全选', role: 'selectAll' },
+      ],
+    },
+    {
+      label: '查看',
+      submenu: [
+        { label: '重新加载', role: 'reload' },
+        { label: '强制重新加载', role: 'forceReload' },
+        { type: 'separator' },
+        { label: '放大', role: 'zoomIn' },
+        { label: '缩小', role: 'zoomOut' },
+        { label: '重置缩放', role: 'resetZoom' },
+        { type: 'separator' },
+        { label: '打开后端日志', click: () => void shell.openPath(backendLogPath()) },
+        { label: '开发者工具', role: 'toggleDevTools' },
+      ],
+    },
+    {
+      label: '帮助',
+      submenu: [{ label: '关于 Joyo', role: 'about' }],
+    },
+  ]
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
 
 function createWindow(): void {
   win = new BrowserWindow({
@@ -48,9 +102,17 @@ function createWindow(): void {
   })
 }
 
+app.on('second-instance', () => {
+  if (win) {
+    if (win.isMinimized()) win.restore()
+    win.focus()
+  }
+})
+
 app.whenReady().then(async () => {
   try {
-    backend = await resolveBackend(app.isPackaged)
+    buildMenu()
+    backend = await resolveBackend(app.isPackaged, backendLogPath())
     console.log(`[main] 后端就绪: ${backend.baseUrl}`)
 
     // 渲染进程经 preload 获取启动配置

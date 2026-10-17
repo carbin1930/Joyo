@@ -1,4 +1,4 @@
-// 所有用户可见文案集中于此（coding-frontend.md 第 6 节），v0.1 不引入多语言框架
+﻿// 所有用户可见文案集中于此（coding-frontend.md 第 6 节），v0.1 不引入多语言框架
 export const zhCN = {
   app: {
     name: 'Joyo',
@@ -30,11 +30,17 @@ export const zhCN = {
     pageInfo: (page: number, total: number) => `${page} / ${total} 页`,
     maxRowsLabel: '行数限制',
     defaultDb: (db: string) => `库：${db}`,
+    noDb: '未选择数据库',
+    dbSwitched: (db: string) => `已切换到数据库 ${db}`,
     shortcutHint: 'Ctrl+Enter 运行 · Ctrl+/ 注释',
+    bottomResult: '执行结果',
+    bottomSchema: (schema: string, table: string) => `表结构：${schema}.${table}`,
   },
   schema: {
     title: '对象树',
     refresh: '刷新',
+    useDbTitle: '双击切换到该库',
+    currentDbTitle: '当前使用的库',
     filterPlaceholder: '过滤名称…',
     noConnection: '连接后在此浏览库表',
     loading: '加载中…',
@@ -44,6 +50,7 @@ export const zhCN = {
     detail: {
       noSelection: '在左侧树中单击一个表查看结构',
       loadFailed: '加载失败，可点击树上刷新重试',
+      backToEditor: '← 返回编辑器',
       tabs: {
         columns: '列',
         indexes: '索引',

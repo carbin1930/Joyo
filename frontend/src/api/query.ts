@@ -33,3 +33,13 @@ export function getQueryRows(
     `/api/v1/queries/${encodeURIComponent(queryId)}/rows?page=${page}&pageSize=${pageSize}`,
   )
 }
+
+/** 切换默认数据库（USE 语句；标识符反引号转义） */
+export function useDatabase(connectionId: string, schema: string): Promise<QueryExecuteResponse> {
+  const quoted = `\`${schema.replace(/`/g, '``')}\``
+  return request<QueryExecuteResponse>(
+    'POST',
+    `/api/v1/connections/${encodeURIComponent(connectionId)}/queries`,
+    { sql: `USE ${quoted}`, maxRows: 1, queryTimeoutSec: 10 },
+  )
+}

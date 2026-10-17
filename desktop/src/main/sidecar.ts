@@ -106,6 +106,8 @@ export interface StartSidecarOptions {
   jarPath: string
   /** 内置 JRE 目录（可选），存在则优先使用 */
   runtimeDir?: string
+  /** 后端文件日志路径（传入则设置 JOYO_LOG_FILE 环境变量） */
+  logFile?: string
   onLog?: (line: string) => void
 }
 
@@ -120,7 +122,13 @@ export async function startSidecar(options: StartSidecarOptions): Promise<Resolv
   const child = spawn(
     javaPath,
     ['-jar', options.jarPath, `--server.port=${port}`, `--joyo.token=${token}`],
-    { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true },
+    {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+      env: options.logFile
+        ? { ...process.env, JOYO_LOG_FILE: options.logFile }
+        : process.env,
+    },
   )
 
   child.stdout?.on('data', (chunk: Buffer) => log(chunk.toString().trimEnd()))
@@ -147,7 +155,7 @@ export async function startSidecar(options: StartSidecarOptions): Promise<Resolv
  * - 打包模式（isPackaged=true）：spawn 内置 jar（resources/bin/joyo-backend.jar）；
  *   开发模式下也可用 JOYO_BACKEND_JAR 覆盖 jar 路径来测试 sidecar 流程
  */
-export async function resolveBackend(isPackaged: boolean): Promise<ResolvedBackend> {
+export async function resolveBackend(isPackaged: boolean, logFile?: string): Promise<ResolvedBackend> {
   const devUrl = process.env.JOYO_DEV_BACKEND_URL
   if (devUrl) {
     const baseUrl = devUrl.replace(/\/$/, '')
@@ -172,5 +180,5 @@ export async function resolveBackend(isPackaged: boolean): Promise<ResolvedBacke
   }
 
   const runtimeDir = process.env.JOYO_BACKEND_RUNTIME
-  return startSidecar({ jarPath, runtimeDir })
+  return startSidecar({ jarPath, runtimeDir, logFile })
 }

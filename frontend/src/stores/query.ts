@@ -1,5 +1,5 @@
 ﻿import { defineStore } from 'pinia'
-import { executeQuery, getQueryRows } from '@/api/query'
+import { executeQuery, getQueryRows, useDatabase } from '@/api/query'
 import { toast } from '@/composables/use-toast'
 import type { StatementResult } from '@/types/api'
 import { zhCN } from '@/locales/zh-CN'
@@ -18,6 +18,8 @@ let tabSeq = 1
 function nextTabId(): string {
   return `tab-${tabSeq++}`
 }
+
+let insertSeq = 0
 
 function toTab(s: StatementResult, total: number): ResultTab {
   const title =
@@ -46,6 +48,10 @@ export const useQueryStore = defineStore('query', {
     tabs: [] as ResultTab[],
     activeTabId: null as string | null,
     maxRows: 1000,
+    /** 当前数据库（USE 后生效；初始取连接的 defaultDatabase） */
+    currentDb: {} as Record<string, string>,
+    /** 编辑器插入请求（对象树双击表名 → Monaco 光标处插入） */
+    insertRequest: null as { text: string; seq: number } | null,
   }),
 
   actions: {
@@ -96,6 +102,23 @@ export const useQueryStore = defineStore('query', {
       } catch (e) {
         toast('error', e instanceof Error ? e.message : String(e))
       }
+    },
+
+    /** 切换当前数据库（USE 语句） */
+    async switchDb(connectionId: string, schema: string): Promise<void> {
+      try {
+        await useDatabase(connectionId, schema)
+        this.currentDb[connectionId] = schema
+        toast('success', zhCN.query.dbSwitched(schema))
+      } catch (e) {
+        toast('error', e instanceof Error ? e.message : String(e))
+      }
+    },
+
+    /** 请求编辑器在光标处插入文本（由 MonacoEditor 监听执行） */
+    requestInsert(text: string): void {
+      insertSeq += 1
+      this.insertRequest = { text, seq: insertSeq }
     },
   },
 })

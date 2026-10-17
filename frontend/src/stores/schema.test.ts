@@ -1,5 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+﻿import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+
+/** 排空后台预取等挂起的异步任务，避免跨用例竞态 */
+const flushAsync = () => new Promise((r) => setTimeout(r, 0))
 
 const apiMock = vi.hoisted(() => ({
   getSchemas: vi.fn(),
@@ -51,6 +54,7 @@ describe('schema store', () => {
     const store = useSchemaStore()
     await store.activate('conn-1')
     await store.toggleSchema('conn-1', 'joyo')
+    await flushAsync()
     expect(apiMock.getTables).toHaveBeenCalledTimes(1)
     expect(store.filterTables('joyo', '')).toHaveLength(2)
 
@@ -78,6 +82,7 @@ describe('schema store', () => {
     const store = useSchemaStore()
     await store.activate('conn-1')
     await store.toggleSchema('conn-1', 'joyo')
+    await flushAsync()
 
     expect(store.filterTables('joyo', '').length).toBe(200)
     expect(store.truncatedCount('joyo', '')).toBe(300)
@@ -91,6 +96,7 @@ describe('schema store', () => {
     await store.activate('conn-1')
     await store.toggleSchema('conn-1', 'joyo')
 
+    await flushAsync()
     expect(store.filteredEmpty('joyo', '不存在的前缀xyz')).toBe(true)
     expect(store.filteredEmpty('joyo', 'user')).toBe(false)
   })
@@ -112,7 +118,9 @@ describe('schema store', () => {
     const store = useSchemaStore()
     await store.activate('conn-1')
     await store.toggleSchema('conn-1', 'joyo')
+    await flushAsync()
     await store.refreshTables('conn-1', 'joyo')
+    await flushAsync()
     expect(apiMock.getTables).toHaveBeenCalledTimes(2)
   })
 })
