@@ -45,7 +45,9 @@
 - Electron postinstall 需在 pnpm-workspace.yaml 的 `allowBuilds` 中加入 `electron: true`，否则二进制下载脚本被 pnpm 12 拦截
 - Windows 杀后端进程树必须用 `taskkill /T /F`，直接 child.kill 会残留 java 进程；taskkill 强杀后子进程 exitCode 为 1，属正常
 
+- [x] 2026-10-17 【spec-02 任务 2】前端 schema 树 + 表详情：`schema` store（懒加载/展开缓存/选中联动/断开清树/200 条分块渲染）+ `SchemaTree`（过滤框/层级刷新/视图图标/行数估计）+ `TableDetail`（列/索引/DDL 三 Tab、DDL 复制）+ 连接成功自动激活树；前端 19 个单测全过，typecheck/build 通过
+
 ## 下一任务
 
-1. 【spec-02 任务 2】前端 schema 树 + 表详情：lazy 树组件（连接→库→表→列）+ 表详情三 Tab（列/索引/DDL）+ 过滤框 + 刷新，联调端到端
+1. 【spec-02 实机验收】连接后展开库/表/列、表详情三 Tab、过滤、刷新、DDL 复制；通过后合入 main，进入 spec-03 SQL 编辑器
 

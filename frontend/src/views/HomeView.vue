@@ -1,41 +1,51 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useBackendStore } from '@/stores/backend'
+import { useSchemaStore } from '@/stores/schema'
+import TableDetail from '@/components/schema/TableDetail.vue'
 import { zhCN } from '@/locales/zh-CN'
 
 const backend = useBackendStore()
+const schemaStore = useSchemaStore()
 
-const statusText = computed(() => {
-  switch (backend.status) {
-    case 'ok':
-      return zhCN.backend.ok(backend.info?.version ?? '')
-    case 'unavailable':
-      return zhCN.backend.unavailable
-    default:
-      return zhCN.backend.checking
-  }
+/** 选中了表则主区显示表详情，否则显示首页状态卡 */
+const showTableDetail = computed(() => schemaStore.selectedTableLocation !== null)
+
+onMounted(() => {
+  void backend.check()
 })
 </script>
 
 <template>
   <section class="home">
-    <h1 class="home-title">{{ zhCN.app.name }}</h1>
-    <p class="home-subtitle">{{ zhCN.app.slogan }}</p>
+    <TableDetail v-if="showTableDetail" />
+    <template v-else>
+      <h1 class="home-title">{{ zhCN.app.name }}</h1>
+      <p class="home-subtitle">{{ zhCN.app.slogan }}</p>
 
-    <div class="status-card" :class="`status-${backend.status}`" data-testid="backend-status">
-      <span class="status-dot" />
-      <span>{{ statusText }}</span>
-      <span v-if="backend.status === 'unavailable'" class="status-error">
-        {{ backend.errorMessage }}
-      </span>
-      <button v-if="backend.status === 'unavailable'" class="retry-btn" @click="backend.check()">
-        {{ zhCN.backend.retry }}
-      </button>
-    </div>
+      <div class="status-card" :class="`status-${backend.status}`" data-testid="backend-status">
+        <span class="status-dot" />
+        <span>{{ backend.status === 'ok' ? zhCN.backend.ok(backend.info?.version ?? '') : backend.status === 'unavailable' ? zhCN.backend.unavailable : zhCN.backend.checking }}</span>
+        <span v-if="backend.status === 'unavailable'" class="status-error">
+          {{ backend.errorMessage }}
+        </span>
+        <button v-if="backend.status === 'unavailable'" class="retry-btn" @click="backend.check()">
+          {{ zhCN.backend.retry }}
+        </button>
+      </div>
+
+      <p class="hint">{{ zhCN.schema.hint }}</p>
+    </template>
   </section>
 </template>
 
 <style scoped>
+.home {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
 .home-title {
   font-size: 24px;
   margin: 8px 0 4px;
@@ -100,5 +110,11 @@ const statusText = computed(() => {
 
 .retry-btn:hover {
   border-color: var(--joyo-primary);
+}
+
+.hint {
+  margin-top: 20px;
+  color: var(--joyo-text-muted);
+  font-size: 13px;
 }
 </style>

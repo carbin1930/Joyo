@@ -174,6 +174,8 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 8px;
   min-height: 0;
+  flex-shrink: 0;
+  max-height: 42%;
 }
 
 .add-btn {
