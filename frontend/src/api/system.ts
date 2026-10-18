@@ -5,3 +5,14 @@ import type { HealthData } from '@/types/api'
 export function getHealth(): Promise<HealthData> {
   return request<HealthData>('GET', '/api/v1/health')
 }
+
+export interface LogTailResponse {
+  path: string
+  lines: string[]
+  truncated: boolean
+}
+
+/** 后端日志尾部（F13 精简版） */
+export function getLogs(tail = 200): Promise<LogTailResponse> {
+  return request<LogTailResponse>('GET', `/api/v1/logs?tail=${tail}`)
+}

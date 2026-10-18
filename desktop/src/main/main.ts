@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
 import path from 'node:path'
 import { registerConnectionsIpc } from './connections-ipc'
 import { SafeStorageCipher } from './safe-storage-cipher'
@@ -57,7 +57,7 @@ function buildMenu(): void {
         { label: '缩小', role: 'zoomOut' },
         { label: '重置缩放', role: 'resetZoom' },
         { type: 'separator' },
-        { label: '打开后端日志', click: () => void shell.openPath(backendLogPath()) },
+        { label: '打开后端日志', click: () => win?.webContents.send('joyo:open-logs') },
         { label: '开发者工具', role: 'toggleDevTools' },
       ],
     },

@@ -14,6 +14,10 @@ function getLaunchConfig(): Promise<{ baseUrl: string; token: string }> {
 
 contextBridge.exposeInMainWorld('joyo', {
   getLaunchConfig,
+  /** 菜单"打开后端日志" → 通知渲染进程打开日志弹窗 */
+  onOpenLogs: (cb: () => void): void => {
+    ipcRenderer.on('joyo:open-logs', () => cb())
+  },
   connections: {
     list: () => ipcRenderer.invoke('connections:list'),
     save: (input: unknown) => ipcRenderer.invoke('connections:save', input),

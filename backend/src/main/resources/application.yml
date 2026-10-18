@@ -8,10 +8,8 @@ spring:
   application:
     name: joyo-backend
 
-logging:
-  file:
-    # 文件日志（排查用）；打包模式由 Electron 通过 JOYO_LOG_FILE 指向数据目录
-    name: ${JOYO_LOG_FILE:logs/backend.log}
+# 文件日志路径在 log4j2.xml 中配置（env:JOYO_LOG_FILE，缺省 logs/backend.log）；
+# 注意：自定义 log4j2.xml 会绕过 Spring Boot 的 logging.file.name 约定
 
 joyo:
   # Electron Main 每次启动生成随机 UUID 通过 --joyo.token 传入；

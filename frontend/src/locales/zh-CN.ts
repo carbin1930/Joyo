@@ -14,6 +14,12 @@ export const zhCN = {
     cancel: '取消',
     save: '保存',
   },
+  log: {
+    entry: '后端日志',
+    title: '后端日志（尾部 200 行，每 3 秒自动刷新）',
+    loading: '刷新中…',
+    refresh: '刷新',
+  },
   query: {
     run: '运行',
     running: '执行中…',

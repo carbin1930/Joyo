@@ -84,6 +84,8 @@
     </dependencyManagement>
 
     <build>
+        <!-- 固定产物名：sidecar 的默认查找路径是 backend/target/joyo-backend.jar -->
+        <finalName>joyo-backend</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

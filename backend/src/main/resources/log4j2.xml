@@ -1,16 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- 日志框架：Log4j2（docs/90-conventions/coding-backend.md 第 5 节） -->
+<!-- 文件路径：优先环境变量 JOYO_LOG_FILE（打包模式由 Electron 传入数据目录），缺省相对 CWD 的 logs/backend.log -->
 <Configuration status="WARN">
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" charset="UTF-8"/>
         </Console>
+        <RollingFile name="BackendFile" fileName="${env:JOYO_LOG_FILE:-logs/backend.log}"
+                     filePattern="${env:JOYO_LOG_FILE:-logs/backend.log}.%i">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" charset="UTF-8"/>
+            <SizeBasedTriggeringPolicy size="10MB"/>
+            <DefaultRolloverStrategy max="3"/>
+        </RollingFile>
     </Appenders>
     <Loggers>
         <!-- 业务包放开 DEBUG：后续 SQL 执行日志（不得包含密码与完整结果集） -->
         <Logger name="com.joyo" level="DEBUG"/>
         <Root level="INFO">
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="BackendFile"/>
         </Root>
     </Loggers>
 </Configuration>
