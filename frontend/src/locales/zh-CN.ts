@@ -1,4 +1,4 @@
-// 所有用户可见文案集中于此（coding-frontend.md 第 6 节），v0.1 不引入多语言框架
+﻿// 所有用户可见文案集中于此（coding-frontend.md 第 6 节），v0.1 不引入多语言框架
 export const zhCN = {
   app: {
     name: 'Joyo',
@@ -14,9 +14,39 @@ export const zhCN = {
     cancel: '取消',
     save: '保存',
   },
+  log: {
+    entry: '后端日志',
+    title: '后端日志（尾部 200 行，每 3 秒自动刷新）',
+    loading: '刷新中…',
+    refresh: '刷新',
+  },
+  query: {
+    run: '运行',
+    running: '执行中…',
+    emptySql: '没有可执行的语句',
+    noResult: '按 Ctrl+Enter 或点击运行执行 SQL',
+    errorTab: '错误',
+    resultTab: (n: number, total: number) => `结果 ${n}/${total}`,
+    messageTab: (n: number, total: number) => `消息 ${n}/${total}`,
+    rowsInfo: (rows: number, ms: number) => `共 ${rows} 行 · ${ms} ms`,
+    affectedInfo: (kind: string, affected: number, ms: number) =>
+      kind === 'UPDATE' ? `执行成功，影响 ${affected} 行（${ms} ms）` : `执行成功（${ms} ms）`,
+    truncated: '已截断',
+    zeroRows: '查询成功，0 行',
+    pageInfo: (page: number, total: number) => `${page} / ${total} 页`,
+    maxRowsLabel: '行数限制',
+    defaultDb: (db: string) => `库：${db}`,
+    noDb: '未选择数据库',
+    dbSwitched: (db: string) => `已切换到数据库 ${db}`,
+    shortcutHint: 'Ctrl+Enter 运行 · Ctrl+/ 注释',
+    bottomResult: '执行结果',
+    bottomSchema: (schema: string, table: string) => `表结构：${schema}.${table}`,
+  },
   schema: {
     title: '对象树',
     refresh: '刷新',
+    useDbTitle: '双击切换到该库',
+    currentDbTitle: '当前使用的库',
     filterPlaceholder: '过滤名称…',
     noConnection: '连接后在此浏览库表',
     loading: '加载中…',
@@ -26,6 +56,7 @@ export const zhCN = {
     detail: {
       noSelection: '在左侧树中单击一个表查看结构',
       loadFailed: '加载失败，可点击树上刷新重试',
+      backToEditor: '← 返回编辑器',
       tabs: {
         columns: '列',
         indexes: '索引',

@@ -8,6 +8,9 @@ spring:
   application:
     name: joyo-backend
 
+# 文件日志路径在 log4j2.xml 中配置（env:JOYO_LOG_FILE，缺省 logs/backend.log）；
+# 注意：自定义 log4j2.xml 会绕过 Spring Boot 的 logging.file.name 约定
+
 joyo:
   # Electron Main 每次启动生成随机 UUID 通过 --joyo.token 传入；
   # 本地开发未设置环境变量时使用 dev-token（见 overview.md 第 2 节开发模式）

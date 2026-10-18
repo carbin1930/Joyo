@@ -38,6 +38,10 @@ async function copyDdl(): Promise<void> {
   }
 }
 
+function closeDetail(): void {
+  schemaStore.resetSelection()
+}
+
 function columnTypeText(col: TableColumn): string {
   return col.length != null ? `${col.dataType}(${col.length})` : col.dataType
 }
@@ -49,6 +53,10 @@ function columnTypeText(col: TableColumn): string {
       <h2 class="detail-title">
         <template v-if="location">{{ location.schema }}.{{ location.table }}</template>
       </h2>
+      <span class="header-spacer" />
+      <button class="close-btn" data-testid="back-to-editor" @click="closeDetail">
+        {{ zhCN.schema.detail.backToEditor }}
+      </button>
     </div>
 
     <div v-if="!location" class="detail-empty">
@@ -147,6 +155,25 @@ function columnTypeText(col: TableColumn): string {
 .detail-header {
   display: flex;
   align-items: center;
+}
+
+.close-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--joyo-border);
+  border-radius: 6px;
+  background: var(--joyo-bg-card);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--joyo-text-muted);
+}
+
+.close-btn:hover {
+  border-color: var(--joyo-primary);
+  color: var(--joyo-primary);
+}
+
+.header-spacer {
+  flex: 1;
 }
 
 .detail-title {

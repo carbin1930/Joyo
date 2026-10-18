@@ -93,11 +93,36 @@ export const useSchemaStore = defineStore('schema', {
       if (!tree.tablesBySchema[schema]) {
         try {
           tree.tablesBySchema[schema] = (await getTables(connectionId, schema)).tables
+          // 后台预取表结构（上限 50 张、静默）：让列名补全覆盖整个库
+          void this.prefetchDetails(connectionId, schema)
         } catch (e) {
           tree.expandedSchemas[schema] = false
           delete tree.tablesBySchema[schema]
           toast('error', e instanceof Error ? e.message : String(e))
         }
+      }
+    },
+
+    /** 补全用：按需加载某库的表列表（已加载则跳过），静默失败 */
+    async loadTablesIfMissing(connectionId: string, schema: string): Promise<void> {
+      const tree = this.trees[connectionId]
+      if (!tree || tree.tablesBySchema[schema]) return
+      try {
+        tree.tablesBySchema[schema] = (await getTables(connectionId, schema)).tables
+        void this.prefetchDetails(connectionId, schema)
+      } catch {
+        // 静默失败：补全场景不打扰用户
+      }
+    },
+
+    /** 静默预取某库各表的结构（供列名补全），失败不打扰用户 */
+    async prefetchDetails(connectionId: string, schema: string): Promise<void> {      const tree = this.trees[connectionId]
+      if (!tree) return
+      const tables = (tree.tablesBySchema[schema] ?? [])
+          .filter((t) => t.type === 'BASE_TABLE')
+          .slice(0, 50)
+      for (const t of tables) {
+        await this.ensureDetail(connectionId, schema, t.name, true)
       }
     },
 
@@ -135,16 +160,21 @@ export const useSchemaStore = defineStore('schema', {
       tree.expandedTables[tableKey(schema, table)] = true
     },
 
-    async ensureDetail(connectionId: string, schema: string, table: string): Promise<void> {
+    async ensureDetail(
+        connectionId: string,
+        schema: string,
+        table: string,
+        silent = false,
+    ): Promise<void> {
       const tree = this.trees[connectionId]
       if (!tree || tree.detailByKey[tableKey(schema, table)]) return
-      this.detailLoading = true
+      if (!silent) this.detailLoading = true
       try {
         tree.detailByKey[tableKey(schema, table)] = await getTableDetail(connectionId, schema, table)
       } catch (e) {
-        toast('error', e instanceof Error ? e.message : String(e))
+        if (!silent) toast('error', e instanceof Error ? e.message : String(e))
       } finally {
-        this.detailLoading = false
+        if (!silent) this.detailLoading = false
       }
     },
 

@@ -6,20 +6,26 @@
 ## 项目状态速览
 
 - 当前版本：v0.1（spec-01 ~ spec-04）
-- 已完成 spec：无
-- 进行中：v0.1 启动序列——backend 骨架（已完成）
+- 已完成并合入 main：spec-01 连接管理、spec-02 库表浏览
+- **进行中：spec-03 SQL 编辑器**（前后端代码完成，实机验收大部分通过；遗留一个待查问题，见"已知问题"第 1 条）
+- 当前分支：`feat/spec-03-query-editor`（有未提交改动：SQL 补全体系、库切换联动、菜单中文化、文件日志等）
+- **下次会话第一件事**：重启后端启用文件日志 → 复现"发生内部错误" → 读 `backend/logs/backend.log` 定位（详见"已知问题"第 1 条）
 
-## 已完成
+## 已完成（按时间）
 
 - [x] 2026-10-15 文档体系全部生成：PRD、路线图、架构、ADR-001、数据模型、spec-template、spec-01~04、API 契约、四份约定、CLAUDE.md
-- [x] 2026-10-15 backend 骨架：Spring Boot 3.3.5（Java 21、Log4j2）+ `/api/v1/health` + TokenAuthFilter + 统一响应/全局异常 + 7 个单测全部通过（`mvn test` BUILD SUCCESS）
-- [x] 2026-10-15 frontend 骨架：Vite 6 + Vue 3.5 + TS strict + Pinia + Router(hash) + `api/http.ts` 统一请求层（Token 注入/ApiError/BackendUnavailableError）+ 后端状态卡首页 + 6 个 vitest 单测；typecheck/test/build 全部通过
-- [x] 2026-10-15 desktop 骨架：Electron 33 主进程（sidecar 拉起：空闲端口/随机 Token/健康检查轮询/taskkill 进程树清理 + 开发直连 JOYO_DEV_BACKEND_URL）+ preload（contextBridge 暴露 getLaunchConfig）；sidecar 冒烟测试通过（spawn jar → code=0 → 1003 拦截 → 清理）
-- [x] 2026-10-15 【spec-01 任务 1】Main 侧 `secure-store.ts`（connections.json 原子写/损坏兜底/脱敏视图 + 密码 enc:v1 密文）+ `SafeStorageCipher` + 4 个 IPC 通道注册（list/save/delete/decrypt）+ 10 个 vitest 单测全过；IPC 载荷契约已登记 rest-api.md
-- [x] 2026-10-15 【spec-01 任务 2】后端连接接口：`POST /connections/test` + `POST/DELETE /connections/{id}/session`（HikariCP max=5/timeout 5s/惰性建池/首个连接探活）+ SQLException→2001/2002/2003 分类 + URL 路径编码；18 个测试全过（含 MockMvc controller 测试；Testcontainers 集成测试无 Docker 自动跳过）
-- [x] 2026-10-15 【spec-01 任务 3】前端连接管理 UI：preload 扩展 connections IPC 白名单 + `api/ipc.ts`/`api/connection.ts` + connection store（connect 流程：解密→建会话→绿点；无密码/解密失败/建会话失败的边界处理）+ ConnectionList（右键菜单/二次确认/复制连接）+ ConnectionDialog（测试连接/密码显隐/编辑留空不改密码）+ BaseDialog/ToastHost/use-toast；前端 12 个单测全过，typecheck/build 通过
-- [x] 2026-10-17 spec-01 实机验收通过（真实 MySQL 5.7.40 连通、密码密文、数据迁移），合入 main 并推送
-- [x] 2026-10-17 【spec-02 任务 1】后端元数据接口：`GET /connections/{id}/schemas`（系统库排序在后）+ `/schemas/{schema}/tables`（BASE_TABLE/VIEW/行数估计）+ `/schemas/{schema}/tables/{table}`（列/索引/DDL）；`SqlIdentifiers` 标识符转义（SHOW CREATE TABLE 防注入）；2101 错误码；28 个测试全过（新增 MetadataIT 真实 MySQL 集成测试，覆盖特殊字符表名/视图/无会话 2004/表不存在 2101）
+- [x] 2026-10-15 启动序列三件套：backend 骨架（健康检查/Token 过滤器/统一响应/7 单测）+ frontend 骨架（Vite6/Vue3.5/TS strict/http.ts/状态卡/6 单测）+ desktop 骨架（sidecar 拉起/preload）；sidecar 冒烟测试通过
+- [x] 2026-10-17 【spec-01】任务 1 连接存储（secure-store/SafeStorageCipher/4 IPC 通道/10 单测）+ 任务 2 连接接口（test/session/错误分类 2001-2004/18 测试）+ 任务 3 连接管理 UI（ConnectionList/ConnectionDialog/toast）+ 实机验收通过，合入 main
+- [x] 2026-10-17 【spec-02 任务 1】后端元数据接口（schemas/tables/tableDetail + SqlIdentifiers 转义 + 2101 + MetadataIT）
+- [x] 2026-10-17 【spec-02 任务 2】前端 schema 树 + 表详情（schema store 懒加载/SchemaTree/TableDetail 三 Tab/连接联动/19 单测）；实机验收通过，合入 main
+- [x] 2026-10-18 【spec-03 任务 1】后端查询执行：`SqlSplitter`（字符串/注释感知拆分，16 单测）+ `POST /connections/{id}/queries`（多语句依次执行/失败中止/setMaxRows 截断检测/重复列名去重/全值字符串化）+ `QueryResultCache`（LRU 50/分页/1002 过期）+ 3001/3002 错误分类；53 测试全过
+- [x] 2026-10-18 【spec-03 任务 2】前端 SQL 编辑器：`MonacoEditor` 封装 + `query` store + `QueryEditorView` + `ResultPanel`；24 单测全过
+- [x] 2026-10-18 spec-03 实机验收过程中的增强与修复（详见各文档）：
+  - 数据库选择器（顶栏，USE 切库）+ 树-编辑器联动（单击表自动切库）
+  - SQL 补全体系：关键字/库名/表名/列名补全 + `别名.`、`表名.`、`库名.` 三级点号补全 + **按 SQL 子句动态优先级**（analyzeContext）+ 列名去重 + 库展开后台预取表结构（50 张上限）
+  - 双击表插入：SQLyog 风格别名（下划线分段取首字母），当前库纯表名、跨库带库名限定
+  -  风格库操作：双击库节点切库、当前库树中高亮
+  - 中文应用菜单 + 单实例锁（防双实例抢缓存）+ 后端文件日志（logging.file.name + 菜单"打开后端日志"）
 
 ## 关键决策记录
 
@@ -33,23 +39,48 @@
 | 2026-10-15 | 新增 F12 表/数据同步功能（规划 v0.5） | 用户明确要求，需求评审时补充 |
 | 2026-10-15 | 后端日志框架确定为 Log4j2 | 用户明确指定；需排除 spring-boot-starter-logging |
 | 2026-10-15 | 新增错误码 1003（Token 校验失败） | backend 骨架引入 TokenAuthFilter，已登记 rest-api.md |
+| 2026-10-17 | SQL 补全走"本地元数据 + 上下文优先级"，不请求后端 | 对象树已加载元数据够用，零延迟；v0.2 可加后端全量元数据 |
+| 2026-10-18 | 双击插入别名规则（SQLyog 风格：下划线分段取首字母） | 用户要求参考主流工具；order_item → oi |
+| 2026-10-18 | 新增 F13 日志查看（v0.2）+ 先落地文件日志 | 实机调试需要；控制台中文乱码且隐藏窗口看不到日志 |
+| 2026-10-18 | 新增 F14 资源监控（v0.2）：右下角展示**全量进程**资源（Electron 各子进程 + Java 后端 JVM） | 用户要求；Electron 用 app.getAppMetrics，JVM 用 /health 扩展（Runtime 堆内存 + OperatingSystemMXBean 进程 CPU），主进程汇总 IPC 推送 |
 
 ## 已知问题与坑
 
-- IDE 内置终端可能读不到新安装工具的 PATH（mvn），用完整路径 `D:\dev\tool\apache-maven-3.9.8\bin\mvn.cmd` 或重开终端解决
-- Maven 阿里云镜像偶发 `No route to host`，重试即可恢复
-- 控制台中文日志乱码是终端代码页（GBK）显示问题，不影响文件内容与测试结果
-- pnpm 12：package.json 的 `pnpm` 字段已失效，依赖构建脚本白名单用 `pnpm-workspace.yaml` 的 `allowBuilds:` 键（`pnpm approve-builds --all` 可非交互批准并自动写回）
-- pnpm 下 rollup 的 Windows 原生二进制可能装不上（ERR_DLOPEN_FAILED），需在 devDependencies 显式加 `@rollup/rollup-win32-x64-msvc`（版本与 rollup 一致）
-- vitest 2 内置 vite 5 类型，与 vite 6 冲突，须用 vitest 3；vitest node 环境无 `window`，浏览器 API 取值用 `globalThis`
-- Electron postinstall 需在 pnpm-workspace.yaml 的 `allowBuilds` 中加入 `electron: true`，否则二进制下载脚本被 pnpm 12 拦截
-- Windows 杀后端进程树必须用 `taskkill /T /F`，直接 child.kill 会残留 java 进程；taskkill 强杀后子进程 exitCode 为 1，属正常
-- 【重要】渲染进程（localhost:5173 / file://）→ 后端（127.0.0.1）是跨域请求，后端必须配 CORS 且 TokenAuthFilter 必须放行 OPTIONS 预检（预检不带自定义头）；两者缺一都会表现成"后端服务异常"
-- PowerShell 5.1 执行含中文的 .ps1 必须保存为 UTF-8 with BOM，否则按 GBK 解析直接报语法错误
+### 待查问题（下次会话优先）
 
-- [x] 2026-10-17 【spec-02 任务 2】前端 schema 树 + 表详情：`schema` store（懒加载/展开缓存/选中联动/断开清树/200 条分块渲染）+ `SchemaTree`（过滤框/层级刷新/视图图标/行数估计）+ `TableDetail`（列/索引/DDL 三 Tab、DDL 复制）+ 连接成功自动激活树；前端 19 个单测全过，typecheck/build 通过
+1. 【未定位】执行 SQL 偶发"发生内部错误"（1500）。当时无文件日志。**下次会话：重启后端（启用文件日志）→ 复现 → 读 `backend/logs/backend.log` 中"未捕获异常"堆栈定位**。注意区分 1500 与 2004（后端重启后前端绿点未清导致的会话失效，重连即可）。
+2. 后端需再重启一次才能启用文件日志（当前运行的进程早于该改动）。
+
+### 工程坑（已解决，留档防复发）
+
+- IDE 内置终端可能读不到新装工具的 PATH（mvn），用完整路径或重开终端
+- Maven 阿里云镜像偶发 `No route to host`，重试即可
+- 控制台中文日志乱码是终端代码页（GBK）显示问题；后端窗口先 `chcp 65001`
+- pnpm 12：`package.json` 的 `pnpm` 字段已失效，构建脚本白名单用 `pnpm-workspace.yaml` 的 `allowBuilds:`（`pnpm approve-builds --all` 非交互批准）
+- pnpm 下 rollup 的 Windows 原生二进制可能装不上（ERR_DLOPEN_FAILED），devDependencies 显式加 `@rollup/rollup-win32-x64-msvc`（版本同 rollup）
+- vitest 2 内置 vite 5 类型与 vite 6 冲突，须用 vitest 3；vitest node 环境无 `window`，用 `globalThis`
+- Electron postinstall 需在 `allowBuilds` 加 `electron: true`，否则二进制下载被 pnpm 12 拦截
+- Windows 杀进程树必须 `taskkill /T /F`；强杀后子进程 exitCode=1 属正常
+- 【重要】渲染进程 → 后端是跨域请求：后端须配 CORS 且 TokenAuthFilter 放行 OPTIONS 预检，缺一表现为"后端服务异常"
+- PowerShell 5.1 执行含中文的 .ps1 必须保存为 UTF-8 with BOM
+- PowerShell 下 pnpm 优先调 pnpm.ps1 被执行策略拦截：`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` 或用 `pnpm.cmd`
+- 【重要】新版 JDK（21.0.6+）禁止 Mockito/ByteBuddy 动态自附加：Surefire `argLine=-Djdk.attach.allowAttachSelf=true -XX:+EnableDynamicAgentLoading`（已配 pom.xml）
+- 分支事故教训：切新分支前必须基于最新 main；切完立即核对基线（spec-02 曾漏带 spec-01 收尾提交，cherry-pick 补救）
+- URLEncoder 是表单编码（空格→+），URL 路径需 `%20`
+- 【重要】monaco-editor 0.57 的 exports 映射 `./*` → `./esm/vs/*.js`：worker 导入路径**不带** `esm/vs` 前缀（写成 `esm/vs/...` 会被拼成双倍路径）
+- 【重要】`import * as monaco` 的模块命名空间对象不可扩展，不能挂全局标志，用 `globalThis`
+- 【重要】通过 shell 写文件时 `&&`/`||` 会被替换成 `;`，写入后必须全量检查运算符（本次 MonacoEditor 连续踩中）
+- Electron 双实例共用 userData 会报缓存锁冲突（Unable to create cache/0x5）；已加 `app.requestSingleInstanceLock` 单实例锁根治
+- CSS 百分比高度坑：父容器只有 min-height 时子元素 `height: 40%` 塌陷为 0，改用 flex 布局
+- 后台异步预取会在 vitest 用例间竞态：用例断言前 `await new Promise(r => setTimeout(r, 0))` 排空
+
+### 设计限制（backlog，非缺陷）
+
+- USE 切库经连接池后上下文会残留（HikariCP 检测不到 USE 语句）；单用户场景无影响，多标签/多会话改造时换会话级方案
+- 表/列补全范围 = 已浏览库的元数据（预取上限 50 表/库）；全量补全需后端元数据缓存（v0.2 评估）
 
 ## 下一任务
 
-1. 【spec-02 实机验收】连接后展开库/表/列、表详情三 Tab、过滤、刷新、DDL 复制；通过后合入 main，进入 spec-03 SQL 编辑器
-
+1. 【查因】重启后端（启用文件日志）→ 复现"发生内部错误"→ 读 `backend/logs/backend.log` 定位 1500 堆栈 → 修复
+2. 【spec-03 收尾】实机验收全部通过 → 合并 `feat/spec-03-query-editor` 到 main → 推送
+3. 【spec-04】结果网格升级：复制 CSV/TSV、列宽调整、NULL 样式打磨（ResultGrid 独立组件）→ v0.1 收官打 tag

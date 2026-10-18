@@ -62,3 +62,42 @@ export interface TableDetailResponse {
   indexes: TableIndex[]
   ddl: string
 }
+
+// ===== 查询执行（docs/30-api/rest-api.md 查询执行节，与后端 QueryModels 一一对应） =====
+
+/** 列元信息 */
+export interface ColumnMeta {
+  name: string
+  type: string
+  nullable: boolean
+}
+
+/** 单条语句结果。SELECT 含 queryId/columns/rows/分页；DML 含 affectedRows；DDL 仅 affectedRows */
+export interface StatementResult {
+  ordinal: number
+  kind: 'SELECT' | 'UPDATE' | 'DDL'
+  queryId?: string
+  columns?: ColumnMeta[]
+  totalKnown?: boolean
+  totalRows?: number
+  truncated?: boolean
+  rows?: string[][]
+  page?: number
+  pageSize?: number
+  affectedRows?: number
+  elapsedMs: number
+}
+
+export interface QueryExecuteResponse {
+  statements: StatementResult[]
+  elapsedMs: number
+}
+
+export interface RowsPageResponse {
+  queryId: string
+  rows: string[][]
+  page: number
+  pageSize: number
+  totalKnown: boolean
+  totalRows: number
+}

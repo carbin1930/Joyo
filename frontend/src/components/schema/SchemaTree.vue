@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useConnectionStore } from '@/stores/connection'
+import { useQueryStore } from '@/stores/query'
 import { useSchemaStore, tableKey, TABLE_RENDER_CHUNK } from '@/stores/schema'
 import { zhCN } from '@/locales/zh-CN'
 
@@ -11,6 +12,7 @@ import { zhCN } from '@/locales/zh-CN'
 
 const connections = useConnectionStore()
 const schemaStore = useSchemaStore()
+const queryStore = useQueryStore()
 
 const filter = ref('')
 
@@ -38,6 +40,24 @@ function toggleSchema(name: string): void {
   if (activeId.value) void schemaStore.toggleSchema(activeId.value, name)
 }
 
+/** 当前正在使用的库（USE 切换过则用切换值，否则用连接默认库） */
+function currentDbName(): string {
+  return (
+    (activeId.value ? queryStore.currentDb[activeId.value] : '') ??
+    connections.items.find((c) => c.id === activeId.value)?.defaultDatabase ??
+    ''
+  )
+}
+
+function isCurrentSchema(name: string): boolean {
+  return name === currentDbName()
+}
+
+/** 双击库节点 = 切换到该库（SQLyog 习惯） */
+function useSchemaNode(name: string): void {
+  if (activeId.value) void queryStore.switchDb(activeId.value, name)
+}
+
 function refreshSchema(e: MouseEvent, name: string): void {
   e.stopPropagation()
   if (activeId.value) void schemaStore.refreshTables(activeId.value, name)
@@ -46,6 +66,48 @@ function refreshSchema(e: MouseEvent, name: string): void {
 function onTableClick(schema: string, table: string): void {
   if (!activeId.value) return
   void schemaStore.selectTable(activeId.value, schema, table)
+  // 联动：编辑器当前库自动切到该表所在库（已在目标库则跳过）
+  const current =
+    queryStore.currentDb[activeId.value] ??
+    connections.items.find((c) => c.id === activeId.value)?.defaultDatabase ??
+    ''
+  if (current !== schema) {
+    dbBeforeLastSwitch = current
+    void queryStore.switchDb(activeId.value, schema)
+  }
+}
+
+/** 单击上一张表之前所在的库（用于双击插入时判断是否需要库名限定） */
+let dbBeforeLastSwitch = ''
+
+/** 双击表：插入表名到光标处——当前库的表只插表名；跨库带库名限定并附同名别名 */
+/**
+ * 表别名（参考 SQLyog）：按下划线分段取首字母小写。
+ * 例：order_item → oi，sys_config → sc，user → user。
+ */
+function tableAlias(table: string): string {
+  const name = table.replace(/`/g, '')
+  const parts = name.split('_').filter(Boolean)
+  return parts.length > 1 ? parts.map((p) => p[0]).join('').toLowerCase() : name.toLowerCase()
+}
+
+/**
+ * 双击表：插入表名到光标处（一律带别名）。判断依据是"点击该表之前所在的库"：
+ * 同库：`表名` AS 别名；跨库：`库名`.`表名` AS 别名。
+ */
+function onTableDblClick(schema: string, table: string): void {
+  const current =
+    queryStore.currentDb[activeId.value ?? ''] ??
+    connections.items.find((c) => c.id === activeId.value)?.defaultDatabase ??
+    ''
+  const base = dbBeforeLastSwitch || current
+  const escapedTable = '`' + table.replace(/`/g, '``') + '`'
+  const alias = tableAlias(table)
+  const text =
+    (schema === base
+      ? escapedTable
+      : '`' + schema.replace(/`/g, '``') + '`.' + escapedTable) + ' AS ' + alias
+  queryStore.requestInsert(text)
 }
 
 function onTableToggle(e: MouseEvent, schema: string, table: string): void {
@@ -84,7 +146,13 @@ function isSelected(schema: string, table: string): boolean {
 
     <div v-else class="tree-body">
       <div v-for="s in tree?.schemas ?? []" :key="s.name" class="schema-node">
-        <div class="node-row" @click="toggleSchema(s.name)">
+        <div
+          class="node-row"
+          :class="{ current: isCurrentSchema(s.name) }"
+          :title="isCurrentSchema(s.name) ? zhCN.schema.currentDbTitle : zhCN.schema.useDbTitle"
+          @click="toggleSchema(s.name)"
+          @dblclick="useSchemaNode(s.name)"
+        >
           <span class="arrow">{{ tree?.expandedSchemas[s.name] ? '▾' : '▸' }}</span>
           <span class="node-name">{{ s.name }}</span>
           <button
@@ -106,6 +174,7 @@ function isSelected(schema: string, table: string): boolean {
             class="node-row table-row"
             :class="{ selected: isSelected(s.name, t.name) }"
             @click="onTableClick(s.name, t.name)"
+            @dblclick="onTableDblClick(s.name, t.name)"
           >
             <span class="arrow" @click="onTableToggle($event, s.name, t.name)">
               {{ tree?.expandedTables[tableKey(s.name, t.name)] ? '▾' : '▸' }}
@@ -229,6 +298,11 @@ function isSelected(schema: string, table: string): boolean {
 
 .node-row:hover {
   background: var(--joyo-bg-card);
+}
+
+.node-row.current .node-name {
+  color: var(--joyo-primary);
+  font-weight: 600;
 }
 
 .node-row.selected {

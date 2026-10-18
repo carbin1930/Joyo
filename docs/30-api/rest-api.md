@@ -198,3 +198,5 @@ interface SaveConnectionInput {
 - `POST /export`（spec-07 导出，流式响应）
 - `POST /queries/{queryId}/cancel`（查询中断，v0.4）
 - `POST /sync/compare`、`POST /sync/execute`（spec-12 表/数据同步，v0.5）
+- `GET /logs?tail=200`（F13 日志查看，v0.2；读取文件日志尾部）
+- `/health` 响应扩展（F14 资源监控，v0.2）：data 增加 `jvm: { heapUsedMb, heapMaxMb, cpuLoad }`，JVM 堆内存取 Runtime，进程 CPU 取 OperatingSystemMXBean.getProcessCpuLoad（增量采样）

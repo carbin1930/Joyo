@@ -84,10 +84,20 @@
     </dependencyManagement>
 
     <build>
+        <!-- 固定产物名：sidecar 的默认查找路径是 backend/target/joyo-backend.jar -->
+        <finalName>joyo-backend</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- 新版 JDK 收紧动态 agent 附加：允许 Mockito/ByteBuddy 自附加 -->
+                    <argLine>-Djdk.attach.allowAttachSelf=true -XX:+EnableDynamicAgentLoading</argLine>
+                </configuration>
             </plugin>
         </plugins>
     </build>
