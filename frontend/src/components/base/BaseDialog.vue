@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
 
-defineProps<{
+/**
+ * 对话框基座（ADR-002）：内部改用 el-dialog，对外 API 保持不变。
+ * slot 名保持默认插槽，调用方无需改动。
+ */
+
+const props = defineProps<{
   title: string
   open: boolean
   width?: number
@@ -9,77 +14,23 @@ defineProps<{
 
 const emit = defineEmits<{ close: [] }>()
 
-function onKeydown(e: KeyboardEvent): void {
-  if (e.key === 'Escape') emit('close')
-}
-
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
+const modelValue = computed({
+  get: () => props.open,
+  set: (value: boolean) => {
+    if (!value) emit('close')
+  },
+})
 </script>
 
 <template>
-  <Teleport to="body">
-    <div v-if="open" class="dialog-overlay" @mousedown.self="emit('close')">
-      <div class="dialog-panel" :style="{ width: `${width ?? 480}px` }" role="dialog" :aria-label="title">
-        <div class="dialog-header">
-          <span class="dialog-title">{{ title }}</span>
-          <button class="dialog-close" aria-label="关闭" @click="emit('close')">×</button>
-        </div>
-        <div class="dialog-body">
-          <slot />
-        </div>
-      </div>
-    </div>
-  </Teleport>
+  <el-dialog
+    v-model="modelValue"
+    :title="title"
+    :width="`${width ?? 480}px`"
+    :close-on-click-modal="true"
+    append-to-body
+    destroy-on-close
+  >
+    <slot />
+  </el-dialog>
 </template>
-
-<style scoped>
-.dialog-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgb(0 0 0 / 40%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 500;
-}
-
-.dialog-panel {
-  background: var(--joyo-bg-card);
-  border-radius: 10px;
-  box-shadow: 0 12px 40px rgb(0 0 0 / 20%);
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--joyo-border);
-}
-
-.dialog-title {
-  font-weight: 600;
-}
-
-.dialog-close {
-  border: none;
-  background: none;
-  font-size: 18px;
-  cursor: pointer;
-  color: var(--joyo-text-muted);
-  line-height: 1;
-}
-
-.dialog-close:hover {
-  color: var(--joyo-text);
-}
-
-.dialog-body {
-  padding: 18px;
-  overflow: auto;
-}
-</style>

@@ -17,7 +17,7 @@ Joyo：开源的 MySQL 桌面客户端。架构为 **Electron + Vue 3 + Spring B
 |---|---|
 | 产品范围与版本规划 | `docs/00-product/PRD.md`、`roadmap.md` |
 | 整体架构、进程生命周期、安全模型 | `docs/10-architecture/overview.md` |
-| 架构决策理由 | `docs/10-architecture/adr/001-tech-stack.md` |
+| 架构决策理由 | `docs/10-architecture/adr/`（001 技术栈、002 Element Plus） |
 | 本地数据存储与加密 | `docs/10-architecture/data-model.md` |
 | 正在实现的功能规格 | `docs/20-specs/`（先看 spec-template 了解格式） |
 | 接口定义（单一事实源） | `docs/30-api/rest-api.md` |
@@ -32,6 +32,7 @@ Joyo：开源的 MySQL 桌面客户端。架构为 **Electron + Vue 3 + Spring B
 5. **规范遵守**：代码风格、分层、异常、命名严格遵守 `docs/90-conventions/`；注释与文案用中文，标识符用英文
 6. **完成即记录**：任务完成后按 `git-workflow.md` 提交，并更新 `progress.md`
 7. **值一律字符串**：数据库值传输一律转字符串，前端不转 Number（DECIMAL/BIGINT 精度红线）
+8. **会话卫生（用户明确要求）**：完成一个任务/里程碑，或会话较长时，**主动提醒**：①更新 progress.md ②提交推送 ③建议用户新开窗口继续（上下文过长消耗积分）。新会话开始时先读本文件与 progress.md 恢复上下文
 
 ## 开发环境
 

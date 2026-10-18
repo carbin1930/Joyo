@@ -130,8 +130,11 @@ interface SaveConnectionInput {
 
 请求：
 ```json
-{ "sql": "SELECT id, name FROM user; SELECT 1;", "maxRows": 1000, "queryTimeoutSec": 30 }
+{ "sql": "SELECT id, name FROM user; SELECT 1;", "maxRows": 1000, "queryTimeoutSec": 30, "database": "joyo" }
 ```
+
+`database`（可选）：目标数据库。非空时后端在执行前先 `USE`（反引号转义），
+用于多 SQL 页签各自绑定库的场景，避免连接池库上下文残留。
 
 响应 data（多语句 → `statements` 数组，顺序与拆分结果一致）：
 ```json

@@ -50,7 +50,7 @@ class QueryIT {
     private final QueryService queryService = new QueryService(connectionService, cache);
 
     private QueryExecuteRequest request(String sql, Integer maxRows, Integer timeoutSec) {
-        return new QueryExecuteRequest(sql, maxRows, timeoutSec);
+        return new QueryExecuteRequest(sql, maxRows, timeoutSec, null);
     }
 
     @Test

@@ -1,21 +1,29 @@
 ﻿<script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useQueryStore, type ResultTab } from '@/stores/query'
 import { zhCN } from '@/locales/zh-CN'
+import type { ResultTab } from '@/stores/query'
 
 /**
- * 结果面板（spec-03 第 2 节）：多语句 → 多 Tab；SELECT 渲染基础表格 + 分页；
- * UPDATE/DDL 显示影响行数消息；错误 Tab 显示错误面板。
- * 完整网格能力（NULL 样式/复制 CSV）由 spec-04 的 ResultGrid 升级。
+ * 结果面板（展示层）：多语句 → 多 Tab；SELECT 网格 + 分页；DML/DDL 消息；错误面板。
+ * 状态由父组件（QueryEditorView）按活动 SQL 页签传入。
  */
 
-const queryStore = useQueryStore()
-const activeTab = computed(() =>
-  queryStore.tabs.find((t) => t.id === queryStore.activeTabId) ?? null)
+const props = defineProps<{
+  tabs: ResultTab[]
+  activeTabId: string | null
+  executing: boolean
+}>()
+
+const emit = defineEmits<{
+  select: [tabId: string]
+  page: [tab: ResultTab, page: number]
+}>()
+
+const activeTab = computed(() => props.tabs.find((t) => t.id === props.activeTabId) ?? null)
 
 const pageInput = ref(1)
 watch(
-  () => queryStore.activeTabId,
+  () => props.activeTabId,
   () => {
     pageInput.value = activeTab.value?.statement?.page ?? 1
   },
@@ -28,41 +36,39 @@ function totalPages(tab: ResultTab): number {
 }
 
 function changePage(tab: ResultTab, page: number): void {
-  void queryStore.changePage(tab, page)
+  emit('page', tab, page)
   pageInput.value = page
 }
 </script>
 
 <template>
   <div class="result-panel" data-testid="result-panel">
-    <div v-if="queryStore.tabs.length === 0 && !queryStore.executing" class="panel-empty">
+    <div v-if="props.tabs.length === 0 && !props.executing" class="panel-empty">
       {{ zhCN.query.noResult }}
     </div>
-    <div v-else-if="queryStore.executing" class="panel-empty">{{ zhCN.query.running }}</div>
+    <div v-else-if="props.executing" class="panel-empty">{{ zhCN.query.running }}</div>
 
     <template v-else>
       <div class="result-tabs">
         <button
-          v-for="tab in queryStore.tabs"
+          v-for="tab in props.tabs"
           :key="tab.id"
           class="result-tab"
           :class="[
-            { active: tab.id === queryStore.activeTabId },
+            { active: tab.id === props.activeTabId },
             tab.kind === 'ERROR' ? 'tab-error' : tab.kind === 'SELECT' ? 'tab-select' : 'tab-msg',
           ]"
-          @click="queryStore.activeTabId = tab.id"
+          @click="emit('select', tab.id)"
         >
           {{ tab.title }}
         </button>
       </div>
 
       <div v-if="activeTab" class="tab-content">
-        <!-- 错误 Tab -->
         <div v-if="activeTab.kind === 'ERROR'" class="error-block" data-testid="error-block">
           {{ activeTab.errorMessage }}
         </div>
 
-        <!-- SELECT 结果 -->
         <template v-else-if="activeTab.kind === 'SELECT' && activeTab.statement">
           <div class="meta-bar">
             <span>{{ zhCN.query.rowsInfo(activeTab.statement.totalRows ?? 0, activeTab.statement.elapsedMs) }}</span>
@@ -108,13 +114,12 @@ function changePage(tab: ResultTab, page: number): void {
                 </tr>
               </tbody>
             </table>
-            <div v-if="activeTab.statement.rows?.length === 0" class="grid-empty">
+            <div v-if="(activeTab.statement.rows ?? []).length === 0" class="grid-empty">
               {{ zhCN.query.zeroRows }}
             </div>
           </div>
         </template>
 
-        <!-- DML/DDL 消息 -->
         <div v-else-if="activeTab.statement" class="msg-block" data-testid="msg-block">
           {{
             zhCN.query.affectedInfo(

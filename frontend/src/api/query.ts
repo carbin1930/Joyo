@@ -10,6 +10,8 @@ export interface QueryExecutePayload {
   sql: string
   maxRows?: number
   queryTimeoutSec?: number
+  /** 目标数据库（可选），后端执行前 USE */
+  database?: string
 }
 
 export function executeQuery(

@@ -39,6 +39,7 @@ export const zhCN = {
     noDb: '未选择数据库',
     dbSwitched: (db: string) => `已切换到数据库 ${db}`,
     shortcutHint: 'Ctrl+Enter 运行 · Ctrl+/ 注释',
+    noSqlTab: '点击上方"＋"创建 SQL 页签',
     bottomResult: '执行结果',
     bottomSchema: (schema: string, table: string) => `表结构：${schema}.${table}`,
   },

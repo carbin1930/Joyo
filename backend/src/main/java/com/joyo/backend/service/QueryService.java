@@ -6,6 +6,7 @@ import com.joyo.backend.model.QueryModels.ColumnMeta;
 import com.joyo.backend.model.QueryModels.QueryExecuteRequest;
 import com.joyo.backend.model.QueryModels.QueryExecuteResponse;
 import com.joyo.backend.model.QueryModels.StatementResult;
+import com.joyo.backend.util.SqlIdentifiers;
 import com.joyo.backend.util.SqlSplitter;
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
@@ -55,6 +56,14 @@ public class QueryService {
 
         // 整批使用同一连接：语义一致且减少建连开销
         try (Connection conn = dataSource.getConnection()) {
+            // 页签指定目标库时先 USE：保证连接池场景下库上下文正确（不受其他页签影响）
+            if (!request.databaseOrEmpty().isBlank()) {
+                try (Statement useStmt = conn.createStatement()) {
+                    useStmt.execute("USE " + SqlIdentifiers.quote(request.databaseOrEmpty()));
+                } catch (SQLException e) {
+                    throw classify(e);
+                }
+            }
             int ordinal = 0;
             for (String sql : statements) {
                 ordinal++;

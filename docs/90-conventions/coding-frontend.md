@@ -43,10 +43,11 @@
 
 ## 6. 组件与 UI 细节
 
+- **UI 组件库为 Element Plus（ADR-002，全量引入）**：表单、下拉、按钮、对话框、消息等优先用 el-* 组件；主题通过 main.css 将 `--el-*` 变量映射到 `--joyo-*` 设计变量
+- **保留自研**：SQL 页签（拖拽排序）、结果网格（Tabulator，spec-04）、Monaco 编辑器封装——业务代码不直接操作其原生实例
 - 组件文件 ≤ 300 行，超出则拆子组件
 - 所有用户可见文案集中 `src/locales/zh-CN.ts`（为将来国际化预留，v0.1 不做多语言框架）
-- 错误提示统一 `use-toast.ts`：右下角 toast，error 级别默认 5 秒，可手动关闭
-- Monaco 与 Tabulator 封装为 `MonacoEditor.vue`、`ResultGrid.vue`，业务代码不直接操作其原生实例
+- 错误提示统一 `use-toast.ts`：右下角 toast，error 级别默认 5 秒，可手动关闭（后续迁移 ElMessage）
 
 ## 7. 测试
 

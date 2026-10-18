@@ -36,3 +36,21 @@ body {
 #app {
   height: 100%;
 }
+
+/* ===== Element Plus 主题融合：映射到 Joyo 配色（ADR-002） ===== */
+:root {
+  --el-color-primary: var(--joyo-primary);
+  --el-color-success: var(--joyo-success);
+  --el-color-danger: var(--joyo-danger);
+  --el-color-error: var(--joyo-danger);
+  --el-color-warning: var(--joyo-warning);
+  --el-border-color: var(--joyo-border);
+  --el-border-color-light: var(--joyo-border);
+  --el-border-color-lighter: var(--joyo-border);
+  --el-text-color-primary: var(--joyo-text);
+  --el-text-color-regular: var(--joyo-text);
+  --el-text-color-secondary: var(--joyo-text-muted);
+  --el-fill-color-light: var(--joyo-bg-sidebar);
+  --el-fill-color-blank: var(--joyo-bg-card);
+  --el-font-size-base: 13px;
+}

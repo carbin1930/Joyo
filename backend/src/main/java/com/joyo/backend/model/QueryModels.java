@@ -21,7 +21,9 @@ public final class QueryModels {
             @Min(value = 1, message = "maxRows 范围 1-10000")
             @Max(value = 10000, message = "maxRows 范围 1-10000") Integer maxRows,
             @Min(value = 1, message = "queryTimeoutSec 范围 1-600")
-            @Max(value = 600, message = "queryTimeoutSec 范围 1-600") Integer queryTimeoutSec) {
+            @Max(value = 600, message = "queryTimeoutSec 范围 1-600") Integer queryTimeoutSec,
+            /** 目标数据库（可选）：非空时执行前先 USE，解决连接池库上下文残留 */
+            String database) {
 
         public int maxRowsOrDefault() {
             return maxRows == null ? 1000 : maxRows;
@@ -29,6 +31,10 @@ public final class QueryModels {
 
         public int queryTimeoutOrDefault() {
             return queryTimeoutSec == null ? 30 : queryTimeoutSec;
+        }
+
+        public String databaseOrEmpty() {
+            return database == null ? "" : database;
         }
     }
 

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useBackendStore } from '@/stores/backend'
+import { useConnectionStore } from '@/stores/connection'
+import { useQueryStore } from '@/stores/query'
 import ConnectionList from '@/components/connection/ConnectionList.vue'
 import SchemaTree from '@/components/schema/SchemaTree.vue'
 import LogViewerDialog from '@/components/log/LogViewerDialog.vue'
@@ -8,14 +10,23 @@ import ToastHost from '@/components/ToastHost.vue'
 import { zhCN } from '@/locales/zh-CN'
 
 const backend = useBackendStore()
+const connections = useConnectionStore()
+const queryStore = useQueryStore()
 const logOpen = ref(false)
+
+/** 日志入口分流：已连接 → 主区"日志"页签；未连接 → 弹窗兜底 */
+function openLogs(): void {
+  if (connections.connectedIds.length > 0) {
+    queryStore.setMainTab('log')
+  } else {
+    logOpen.value = true
+  }
+}
 
 onMounted(() => {
   void backend.check()
-  // 菜单"打开后端日志" → 打开日志弹窗
-  window.joyo?.onOpenLogs(() => {
-    logOpen.value = true
-  })
+  // 菜单"打开后端日志"
+  window.joyo?.onOpenLogs(openLogs)
 })
 </script>
 
@@ -27,7 +38,7 @@ onMounted(() => {
       <ConnectionList />
       <SchemaTree />
       <!-- F13 精简版：后端日志查看 -->
-      <button class="log-entry" data-testid="open-logs" @click="logOpen = true">
+      <button class="log-entry" data-testid="open-logs" @click="openLogs">
         {{ zhCN.log.entry }}
       </button>
     </aside>

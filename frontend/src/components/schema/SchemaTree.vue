@@ -40,22 +40,21 @@ function toggleSchema(name: string): void {
   if (activeId.value) void schemaStore.toggleSchema(activeId.value, name)
 }
 
-/** 当前正在使用的库（USE 切换过则用切换值，否则用连接默认库） */
+/** 当前正在使用的库 = 活动 SQL 页签绑定的库（未选库则用连接默认库） */
 function currentDbName(): string {
-  return (
-    (activeId.value ? queryStore.currentDb[activeId.value] : '') ??
-    connections.items.find((c) => c.id === activeId.value)?.defaultDatabase ??
-    ''
-  )
+  const tabDb = queryStore.activeSqlTab?.db ?? ''
+  if (tabDb) return tabDb
+  return connections.items.find((c) => c.id === activeId.value)?.defaultDatabase ?? ''
 }
 
 function isCurrentSchema(name: string): boolean {
   return name === currentDbName()
 }
 
-/** 双击库节点 = 切换到该库（SQLyog 习惯） */
+/** 双击库节点 = 本页签切换到该库（SQLyog 习惯） */
 function useSchemaNode(name: string): void {
-  if (activeId.value) void queryStore.switchDb(activeId.value, name)
+  const tabId = queryStore.activeSqlTab?.id
+  if (tabId) queryStore.setTabDb(tabId, name)
 }
 
 function refreshSchema(e: MouseEvent, name: string): void {
@@ -66,21 +65,11 @@ function refreshSchema(e: MouseEvent, name: string): void {
 function onTableClick(schema: string, table: string): void {
   if (!activeId.value) return
   void schemaStore.selectTable(activeId.value, schema, table)
-  // 联动：编辑器当前库自动切到该表所在库（已在目标库则跳过）
-  const current =
-    queryStore.currentDb[activeId.value] ??
-    connections.items.find((c) => c.id === activeId.value)?.defaultDatabase ??
-    ''
-  if (current !== schema) {
-    dbBeforeLastSwitch = current
-    void queryStore.switchDb(activeId.value, schema)
-  }
+  // 联动：活动 SQL 页签的库自动切到该表所在库（执行时后端按页签 USE）
+  const tabId = queryStore.activeSqlTab?.id
+  if (tabId) queryStore.setTabDb(tabId, schema)
 }
 
-/** 单击上一张表之前所在的库（用于双击插入时判断是否需要库名限定） */
-let dbBeforeLastSwitch = ''
-
-/** 双击表：插入表名到光标处——当前库的表只插表名；跨库带库名限定并附同名别名 */
 /**
  * 表别名（参考 SQLyog）：按下划线分段取首字母小写。
  * 例：order_item → oi，sys_config → sc，user → user。
@@ -92,19 +81,15 @@ function tableAlias(table: string): string {
 }
 
 /**
- * 双击表：插入表名到光标处（一律带别名）。判断依据是"点击该表之前所在的库"：
- * 同库：`表名` AS 别名；跨库：`库名`.`表名` AS 别名。
+ * 双击表：插入表名到光标处（一律带别名）。
+ * 与活动 SQL 页签同库：`表名` AS 别名；跨库：`库名`.`表名` AS 别名。
  */
 function onTableDblClick(schema: string, table: string): void {
-  const current =
-    queryStore.currentDb[activeId.value ?? ''] ??
-    connections.items.find((c) => c.id === activeId.value)?.defaultDatabase ??
-    ''
-  const base = dbBeforeLastSwitch || current
+  const activeDb = queryStore.activeSqlTab?.db ?? ''
   const escapedTable = '`' + table.replace(/`/g, '``') + '`'
   const alias = tableAlias(table)
   const text =
-    (schema === base
+    (schema === activeDb
       ? escapedTable
       : '`' + schema.replace(/`/g, '``') + '`.' + escapedTable) + ' AS ' + alias
   queryStore.requestInsert(text)
