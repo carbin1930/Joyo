@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import ResultContextMenu from '@/components/result/ResultContextMenu.vue'
 import ResultGrid from '@/components/result/ResultGrid.vue'
 import { hiddenColumnCount } from '@/composables/use-result-grid'
 import { zhCN } from '@/locales/zh-CN'
@@ -163,16 +164,12 @@ function changePage(tab: ResultTab, page: number): void {
     </template>
 
     <!-- 右键菜单：有选区复制选区，否则复制当前页整页 -->
-    <div
+    <ResultContextMenu
       v-if="menu"
-      class="ctx-menu"
-      data-testid="result-context-menu"
-      :style="{ left: `${menu.x}px`, top: `${menu.y}px` }"
-      @click.stop
-    >
-      <button class="ctx-item" @click="copyViaMenu('csv')">{{ zhCN.query.copyCsv }}</button>
-      <button class="ctx-item" @click="copyViaMenu('tsv')">{{ zhCN.query.copyTsv }}</button>
-    </div>
+      :x="menu.x"
+      :y="menu.y"
+      @copy="copyViaMenu"
+    />
   </div>
 </template>
 
@@ -289,31 +286,5 @@ function changePage(tab: ResultTab, page: number): void {
   font-size: 13px;
 }
 
-.ctx-menu {
-  position: fixed;
-  z-index: 3000;
-  min-width: 132px;
-  padding: 4px;
-  display: flex;
-  flex-direction: column;
-  background: var(--joyo-bg-card);
-  border: 1px solid var(--joyo-border);
-  border-radius: 6px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-}
 
-.ctx-item {
-  border: none;
-  background: none;
-  text-align: left;
-  padding: 6px 10px;
-  font-size: 12px;
-  color: var(--joyo-text);
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.ctx-item:hover {
-  background: var(--joyo-bg-sidebar);
-}
 </style>
