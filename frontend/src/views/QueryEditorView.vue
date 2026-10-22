@@ -21,6 +21,31 @@ const schemaStore = useSchemaStore()
 
 const editorRef = ref<InstanceType<typeof MonacoEditor> | null>(null)
 
+// ===== 编辑器 / 结果区上下拖拽分割（spec-04 第 5 节）=====
+
+const workAreaRef = ref<HTMLDivElement | null>(null)
+/** 编辑器占工作区高度百分比；默认 38%，拖拽范围 30%~75% */
+const editorPercent = ref(38)
+
+function startSplitDrag(event: MouseEvent): void {
+  const root = workAreaRef.value
+  if (!root) return
+  event.preventDefault()
+  const rect = root.getBoundingClientRect()
+  const onMove = (moveEvent: MouseEvent) => {
+    const percent = ((moveEvent.clientY - rect.top) / rect.height) * 100
+    editorPercent.value = Math.min(75, Math.max(30, percent))
+  }
+  const onUp = () => {
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', onUp)
+    document.body.classList.remove('joyo-resizing')
+  }
+  document.body.classList.add('joyo-resizing')
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', onUp)
+}
+
 const connectionId = computed(() => connections.connectedIds[0] ?? null)
 const activeConn = computed(() =>
   connections.items.find((c) => c.id === connectionId.value) ?? null)
@@ -186,21 +211,29 @@ function closeTab(e: MouseEvent, id: string): void {
         </label>
       </div>
 
-      <div class="editor-area">
-        <MonacoEditor
-          ref="editorRef"
-          v-model="draft"
-          @run="onRun"
+      <div ref="workAreaRef" class="work-area">
+        <div class="editor-area" :style="{ height: `${editorPercent}%` }">
+          <MonacoEditor
+            ref="editorRef"
+            v-model="draft"
+            @run="onRun"
+          />
+        </div>
+
+        <div
+          class="splitter"
+          data-testid="splitter"
+          title="拖拽调整编辑器与结果区高度"
+          @mousedown="startSplitDrag"
         />
-      </div>
 
-      <div class="status-bar">
-        <span class="shortcut-hint">{{ zhCN.query.shortcutHint }}</span>
-        <span class="spacer" />
-        <span class="db-hint">{{ activeTab.db ? zhCN.query.defaultDb(activeTab.db) : zhCN.query.noDb }}</span>
-      </div>
+        <div class="status-bar">
+          <span class="shortcut-hint">{{ zhCN.query.shortcutHint }}</span>
+          <span class="spacer" />
+          <span class="db-hint">{{ activeTab.db ? zhCN.query.defaultDb(activeTab.db) : zhCN.query.noDb }}</span>
+        </div>
 
-      <div class="result-area">
+        <div class="result-area">
         <div class="bottom-tabs">
           <button
             class="bottom-tab"
@@ -229,7 +262,9 @@ function closeTab(e: MouseEvent, id: string): void {
             :executing="queryStore.executing"
             @select="queryStore.activeResultByTab[activeTab.id] = $event"
             @page="(tab, page) => queryStore.changePage(tab, page)"
+            @page-size="(tab, size) => queryStore.changePageSize(tab, size)"
           />
+        </div>
         </div>
       </div>
     </template>
@@ -373,10 +408,41 @@ function closeTab(e: MouseEvent, id: string): void {
   border-radius: 4px;
 }
 
+.work-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .editor-area {
-  height: 38%;
-  min-height: 170px;
+  flex: none;
+  min-height: 0;
   padding-top: 8px;
+}
+
+.splitter {
+  flex: none;
+  height: 7px;
+  margin: 2px 0;
+  position: relative;
+  cursor: row-resize;
+}
+
+.splitter::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--joyo-border);
+}
+
+.splitter:hover::after {
+  background: var(--joyo-primary);
 }
 
 .status-bar {

@@ -145,4 +145,29 @@ describe('query store（多 SQL 页签）', () => {
     expect(resultTab.statement?.rows).toEqual([['201']])
     expect(resultTab.statement?.page).toBe(3)
   })
+
+  it('changePageSize：改每页行数后回到第 1 页并更新 pageSize', async () => {
+    const store = useQueryStore()
+    const tab = store.ensureTabFor('conn-1', '')
+    apiMock.executeQuery.mockResolvedValue({
+      statements: [selectResult(1, 250)],
+      elapsedMs: 5,
+    })
+    await store.execute(tab.id, 'SELECT 1')
+    apiMock.getQueryRows.mockResolvedValue({
+      queryId: 'q-1',
+      rows: [['1'], ['2']],
+      page: 1,
+      pageSize: 200,
+      totalKnown: true,
+      totalRows: 250,
+    })
+
+    const resultTab = store.resultsByTab[tab.id][0]
+    await store.changePageSize(resultTab, 200)
+
+    expect(apiMock.getQueryRows).toHaveBeenCalledWith('q-1', 1, 200)
+    expect(resultTab.statement?.pageSize).toBe(200)
+    expect(resultTab.statement?.rows).toEqual([['1'], ['2']])
+  })
 })

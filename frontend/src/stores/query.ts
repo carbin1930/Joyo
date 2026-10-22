@@ -209,20 +209,31 @@ export const useQueryStore = defineStore('query', {
       }
     },
 
-    async changePage(tab: ResultTab, page: number): Promise<void> {
+    /** 从后端缓存取一页（翻页 / 改每页行数共用）；结果过期时后端返回 1002 */
+    async loadPage(tab: ResultTab, page: number, pageSize?: number): Promise<void> {
       const stmt = tab.statement
-      if (!stmt?.queryId || !stmt.pageSize) return
+      if (!stmt?.queryId) return
       if (!this.activeMainTabId || this.activeMainTabId === 'log') return
       const owner = this.activeMainTabId
       try {
-        const resp = await getQueryRows(stmt.queryId, page, stmt.pageSize)
+        const resp = await getQueryRows(stmt.queryId, page, pageSize ?? stmt.pageSize ?? 100)
         const current = this.resultsByTab[owner]?.find((t) => t.id === tab.id)
         if (!current?.statement) return
         current.statement.rows = resp.rows
         current.statement.page = resp.page
+        current.statement.pageSize = resp.pageSize
       } catch (e) {
         toast('error', e instanceof Error ? e.message : String(e))
       }
+    },
+
+    async changePage(tab: ResultTab, page: number): Promise<void> {
+      await this.loadPage(tab, page)
+    },
+
+    /** 改每页行数后回到第 1 页（spec-04 状态条） */
+    async changePageSize(tab: ResultTab, pageSize: number): Promise<void> {
+      await this.loadPage(tab, 1, pageSize)
     },
 
     /** 请求编辑器在光标处插入文本（由 MonacoEditor 监听执行） */

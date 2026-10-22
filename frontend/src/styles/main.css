@@ -55,6 +55,12 @@ body {
   --el-font-size-base: 13px;
 }
 
+/* 拖拽分割条时全局锁定光标与文本选择 */
+body.joyo-resizing {
+  cursor: row-resize;
+  user-select: none;
+}
+
 /* ===== 结果网格（Tabulator，spec-04）：主题映射到 Joyo 变量 ===== */
 .joyo-result-grid {
   height: 100%;

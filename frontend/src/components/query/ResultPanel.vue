@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ResultContextMenu from '@/components/result/ResultContextMenu.vue'
 import ResultGrid from '@/components/result/ResultGrid.vue'
+import ResultStatusBar from '@/components/result/ResultStatusBar.vue'
 import { hiddenColumnCount } from '@/composables/use-result-grid'
 import { zhCN } from '@/locales/zh-CN'
 import type { ResultTab } from '@/stores/query'
@@ -20,6 +21,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [tabId: string]
   page: [tab: ResultTab, page: number]
+  pageSize: [tab: ResultTab, size: number]
 }>()
 
 const activeTab = computed(() => props.tabs.find((t) => t.id === props.activeTabId) ?? null)
@@ -63,23 +65,20 @@ onBeforeUnmount(() => {
 
 watch(() => props.activeTabId, closeMenu)
 
-const pageInput = ref(1)
-watch(
-  () => props.activeTabId,
-  () => {
-    pageInput.value = activeTab.value?.statement?.page ?? 1
-  },
-)
+/** 状态条只关心页码/每页行数，结果页签由面板自己定位 */
+function onStatusPage(page: number): void {
+  if (activeTab.value) emit('page', activeTab.value, page)
+}
 
+function onStatusPageSize(size: number): void {
+  if (activeTab.value) emit('pageSize', activeTab.value, size)
+}
+
+/** 总页数（页大小变化后由状态条重新计算展示） */
 function totalPages(tab: ResultTab): number {
   const stmt = tab.statement
   if (!stmt?.pageSize || stmt.totalRows == null) return 1
   return Math.max(1, Math.ceil(stmt.totalRows / stmt.pageSize))
-}
-
-function changePage(tab: ResultTab, page: number): void {
-  emit('page', tab, page)
-  pageInput.value = page
 }
 </script>
 
@@ -112,33 +111,17 @@ function changePage(tab: ResultTab, page: number): void {
         </div>
 
         <template v-else-if="activeTab.kind === 'SELECT' && activeTab.statement">
-          <div class="meta-bar">
-            <span>{{ zhCN.query.rowsInfo(activeTab.statement.totalRows ?? 0, activeTab.statement.elapsedMs) }}</span>
-            <span v-if="activeTab.statement.truncated" class="truncated-badge">
-              {{ zhCN.query.truncated }}
-            </span>
-            <span v-if="hiddenCols > 0" class="truncated-badge" data-testid="hidden-cols">
-              {{ zhCN.query.hiddenColumns(hiddenCols) }}
-            </span>
-            <span class="spacer" />
-            <span class="pager">
-              <button
-                class="page-btn"
-                :disabled="(activeTab.statement.page ?? 1) <= 1"
-                @click="changePage(activeTab, (activeTab.statement.page ?? 1) - 1)"
-              >
-                ◀
-              </button>
-              <span>{{ zhCN.query.pageInfo(activeTab.statement.page ?? 1, totalPages(activeTab)) }}</span>
-              <button
-                class="page-btn"
-                :disabled="(activeTab.statement.page ?? 1) >= totalPages(activeTab)"
-                @click="changePage(activeTab, (activeTab.statement.page ?? 1) + 1)"
-              >
-                ▶
-              </button>
-            </span>
-          </div>
+          <ResultStatusBar
+            :total-rows="activeTab.statement.totalRows ?? 0"
+            :elapsed-ms="activeTab.statement.elapsedMs"
+            :truncated="activeTab.statement.truncated ?? false"
+            :hidden-cols="hiddenCols"
+            :page="activeTab.statement.page ?? 1"
+            :page-size="activeTab.statement.pageSize ?? 100"
+            :total-pages="totalPages(activeTab)"
+            @page="onStatusPage"
+            @page-size="onStatusPageSize"
+          />
           <div class="grid-wrap">
             <ResultGrid
               ref="gridRef"
@@ -230,45 +213,6 @@ function changePage(tab: ResultTab, page: number): void {
   font-family: Consolas, monospace;
   font-size: 12px;
   white-space: pre-wrap;
-}
-
-.meta-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 4px;
-  font-size: 12px;
-  color: var(--joyo-text-muted);
-}
-
-.truncated-badge {
-  color: var(--joyo-warning);
-  border: 1px solid var(--joyo-warning);
-  border-radius: 4px;
-  padding: 1px 6px;
-}
-
-.spacer {
-  flex: 1;
-}
-
-.pager {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.page-btn {
-  border: 1px solid var(--joyo-border);
-  background: var(--joyo-bg-card);
-  border-radius: 4px;
-  cursor: pointer;
-  padding: 2px 8px;
-}
-
-.page-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 .grid-wrap {

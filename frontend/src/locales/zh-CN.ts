@@ -32,7 +32,10 @@ export const zhCN = {
     affectedInfo: (kind: string, affected: number, ms: number) =>
       kind === 'UPDATE' ? `执行成功，影响 ${affected} 行（${ms} ms）` : `执行成功（${ms} ms）`,
     truncated: '已截断',
+    truncatedTo: (rows: number) => `截断至 ${rows} 行`,
     zeroRows: '查询成功，0 行',
+    sortLocalOnly: '排序仅本页',
+    pageSizeLabel: '每页',
     hiddenColumns: (n: number) => `其余 ${n} 列未显示`,
     copyCsv: '复制为 CSV',
     copyTsv: '复制为 TSV',
