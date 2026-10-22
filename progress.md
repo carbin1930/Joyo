@@ -80,6 +80,7 @@
 - 后台异步预取会在 vitest 用例间竞态：用例断言前 `await new Promise(r => setTimeout(r, 0))` 排空
 - 【待修】`pnpm lint` 当前跑不起来：`eslint.config.js` 依赖 `globals` 包但未声明安装（ERR_MODULE_NOT_FOUND），与业务代码无关
 - Tabulator 6.x 不自带类型声明，需另装 `@types/tabulator-tables`（版本 6.3.6 对应 lib 6.7 可用）
+- 【已修】`el-select` 的 `@change` 回调参数是**选中值**（string），不是 DOM Event；沿用原生 `select` 写法 `e.target.value` 会抛 TypeError，表现为"下拉选了没反应"（迁移 Element Plus 时踩中）
 
 ### 设计限制（backlog，非缺陷）
 
