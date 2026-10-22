@@ -9,7 +9,9 @@
 - 已完成并合入 main：spec-01 连接管理、spec-02 库表浏览、spec-03 SQL 编辑器（含多 SQL 页签/F13 精简日志/Element Plus 第一批替换，提交 `1f68538`）
 - 当前分支：`main`（与 origin/main 同步，工作区干净）
 - 实机验收：spec-03 增强改动已通过（多 SQL 页签正常；"内部错误 1500" 未再复现）
-- **下一任务**：spec-04 结果网格升级（Tabulator），v0.1 收官打 tag `v0.1.0`
+- **进行中：spec-04 结果网格**（Tabulator 引入，只读网格已替换完成；待实机验收 → 再做复制交互与分割条）
+- 上次提交：`3dea17f feat(frontend): 结果网格接入 Tabulator`
+- **下一任务**：spec-04 任务 2 复制交互（Ctrl+C TSV / 右键 CSV/TSV / 双击编辑复制）
 
 ## 已完成（按时间）
 
@@ -27,6 +29,7 @@
   - 双击表插入：SQLyog 风格别名（下划线分段取首字母），当前库纯表名、跨库带库名限定
   -  风格库操作：双击库节点切库、当前库树中高亮
   - 中文应用菜单 + 单实例锁（防双实例抢缓存）+ 后端文件日志（logging.file.name + 菜单"打开后端日志"）
+- [x] 2026-10-22 【spec-04 任务 1】结果网格接入 Tabulator 6.7（`tabulator-tables` + `@types/tabulator-tables`）：`ResultGrid.vue` 只读网格（行号列冻结/列宽拖拽/虚拟滚动/NULL 灰色斜体居中/BLOB 占位/超长 tooltip 2000 字符/50 列上限提示/0 行占位）；`use-result-grid.ts`（列截断、行号跨页连续、行数据转换）+ `use-clipboard.ts`（TSV/CSV 格式化、NULL→空串、RFC4180 转义）及 8 单测；主题映射写入 main.css；typecheck/build 通过，33+ 前端测试全过
 
 ## 关键决策记录
 
@@ -75,6 +78,8 @@
 - Electron 双实例共用 userData 会报缓存锁冲突（Unable to create cache/0x5）；已加 `app.requestSingleInstanceLock` 单实例锁根治
 - CSS 百分比高度坑：父容器只有 min-height 时子元素 `height: 40%` 塌陷为 0，改用 flex 布局
 - 后台异步预取会在 vitest 用例间竞态：用例断言前 `await new Promise(r => setTimeout(r, 0))` 排空
+- 【待修】`pnpm lint` 当前跑不起来：`eslint.config.js` 依赖 `globals` 包但未声明安装（ERR_MODULE_NOT_FOUND），与业务代码无关
+- Tabulator 6.x 不自带类型声明，需另装 `@types/tabulator-tables`（版本 6.3.6 对应 lib 6.7 可用）
 
 ### 设计限制（backlog，非缺陷）
 
