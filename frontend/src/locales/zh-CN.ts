@@ -33,6 +33,7 @@ export const zhCN = {
       kind === 'UPDATE' ? `执行成功，影响 ${affected} 行（${ms} ms）` : `执行成功（${ms} ms）`,
     truncated: '已截断',
     zeroRows: '查询成功，0 行',
+    hiddenColumns: (n: number) => `其余 ${n} 列未显示`,
     pageInfo: (page: number, total: number) => `${page} / ${total} 页`,
     maxRowsLabel: '行数限制',
     defaultDb: (db: string) => `库：${db}`,

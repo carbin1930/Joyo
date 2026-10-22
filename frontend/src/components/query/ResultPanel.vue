@@ -1,5 +1,7 @@
 ﻿<script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import ResultGrid from '@/components/result/ResultGrid.vue'
+import { hiddenColumnCount } from '@/composables/use-result-grid'
 import { zhCN } from '@/locales/zh-CN'
 import type { ResultTab } from '@/stores/query'
 
@@ -20,6 +22,9 @@ const emit = defineEmits<{
 }>()
 
 const activeTab = computed(() => props.tabs.find((t) => t.id === props.activeTabId) ?? null)
+
+/** 超出渲染上限的列数（spec-04 第 5 节） */
+const hiddenCols = computed(() => hiddenColumnCount(activeTab.value?.statement?.columns ?? []))
 
 const pageInput = ref(1)
 watch(
@@ -75,6 +80,9 @@ function changePage(tab: ResultTab, page: number): void {
             <span v-if="activeTab.statement.truncated" class="truncated-badge">
               {{ zhCN.query.truncated }}
             </span>
+            <span v-if="hiddenCols > 0" class="truncated-badge" data-testid="hidden-cols">
+              {{ zhCN.query.hiddenColumns(hiddenCols) }}
+            </span>
             <span class="spacer" />
             <span class="pager">
               <button
@@ -95,28 +103,12 @@ function changePage(tab: ResultTab, page: number): void {
             </span>
           </div>
           <div class="grid-wrap">
-            <table class="grid">
-              <thead>
-                <tr>
-                  <th class="rownum">#</th>
-                  <th v-for="col in activeTab.statement.columns" :key="col.name" :title="col.type">
-                    {{ col.name }}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(row, ri) in activeTab.statement.rows" :key="ri">
-                  <td class="rownum">{{ ((activeTab.statement.page ?? 1) - 1) * (activeTab.statement.pageSize ?? 0) + ri + 1 }}</td>
-                  <td v-for="(cell, ci) in row" :key="ci" :class="{ 'cell-null': cell === null }">
-                    <template v-if="cell === null">NULL</template>
-                    <template v-else>{{ cell }}</template>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <div v-if="(activeTab.statement.rows ?? []).length === 0" class="grid-empty">
-              {{ zhCN.query.zeroRows }}
-            </div>
+            <ResultGrid
+              :columns="activeTab.statement.columns ?? []"
+              :rows="activeTab.statement.rows ?? []"
+              :page="activeTab.statement.page ?? 1"
+              :page-size="activeTab.statement.pageSize ?? 100"
+            />
           </div>
         </template>
 
@@ -234,51 +226,8 @@ function changePage(tab: ResultTab, page: number): void {
 
 .grid-wrap {
   flex: 1;
-  overflow: auto;
-  border: 1px solid var(--joyo-border);
-  border-radius: 6px;
-}
-
-.grid {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  font-family: Consolas, monospace;
-}
-
-.grid th {
-  text-align: left;
-  padding: 6px 10px;
-  background: var(--joyo-bg-sidebar);
-  border-bottom: 1px solid var(--joyo-border);
-  position: sticky;
-  top: 0;
-}
-
-.grid td {
-  padding: 5px 10px;
-  border-bottom: 1px solid var(--joyo-border);
-  white-space: nowrap;
-  max-width: 420px;
+  min-height: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.rownum {
-  color: var(--joyo-text-muted);
-  width: 48px;
-}
-
-.cell-null {
-  color: var(--joyo-text-muted);
-  font-style: italic;
-}
-
-.grid-empty {
-  padding: 16px;
-  text-align: center;
-  color: var(--joyo-text-muted);
-  font-size: 12px;
 }
 
 .msg-block {

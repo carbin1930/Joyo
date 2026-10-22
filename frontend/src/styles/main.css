@@ -54,3 +54,82 @@ body {
   --el-fill-color-blank: var(--joyo-bg-card);
   --el-font-size-base: 13px;
 }
+
+/* ===== 结果网格（Tabulator，spec-04）：主题映射到 Joyo 变量 ===== */
+.joyo-result-grid {
+  height: 100%;
+}
+
+.tabulator {
+  border: 1px solid var(--joyo-border);
+  border-radius: 6px;
+  background: var(--joyo-bg-card);
+  color: var(--joyo-text);
+  font-size: 12px;
+  font-family: Consolas, monospace;
+}
+
+.tabulator .tabulator-header {
+  background: var(--joyo-bg-sidebar);
+  border-bottom: 1px solid var(--joyo-border);
+  color: var(--joyo-text);
+  font-weight: 600;
+}
+
+.tabulator .tabulator-header .tabulator-col {
+  background: var(--joyo-bg-sidebar);
+  border-right: 1px solid var(--joyo-border);
+}
+
+.tabulator .tabulator-tableholder {
+  background: var(--joyo-bg-card);
+}
+
+.tabulator .tabulator-row {
+  background: var(--joyo-bg-card);
+  border-bottom: 1px solid var(--joyo-border);
+  color: var(--joyo-text);
+}
+
+/* 斑马纹关闭：保持与 SQLyog 类似的纯白底，NULL/选中态更易辨识 */
+.tabulator .tabulator-row.tabulator-row-even {
+  background: var(--joyo-bg-card);
+}
+
+.tabulator .tabulator-row.tabulator-selectable:hover,
+.tabulator .tabulator-row.tabulator-selected,
+.tabulator .tabulator-row.tabulator-row-even.tabulator-selected {
+  background: rgba(47, 111, 237, 0.08);
+}
+
+.tabulator .tabulator-cell {
+  border-right: 1px solid var(--joyo-border);
+  padding: 4px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* NULL 居中（spec-04 第 2 节）；类名由 ResultGrid 的 formatter 打上 */
+.tabulator .tabulator-cell.joyo-cell-null-wrap {
+  text-align: center;
+}
+
+.joyo-cell-null {
+  color: var(--joyo-text-muted);
+  font-style: italic;
+}
+
+.joyo-cell-blob {
+  color: var(--joyo-text-muted);
+}
+
+.joyo-rownum {
+  color: var(--joyo-text-muted);
+}
+
+.tabulator .tabulator-placeholder .tabulator-placeholder-contents {
+  color: var(--joyo-text-muted);
+  font-size: 12px;
+}
+
