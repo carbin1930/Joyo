@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ResultGrid from '@/components/result/ResultGrid.vue'
 import { hiddenColumnCount } from '@/composables/use-result-grid'
 import { zhCN } from '@/locales/zh-CN'
@@ -25,6 +25,42 @@ const activeTab = computed(() => props.tabs.find((t) => t.id === props.activeTab
 
 /** 超出渲染上限的列数（spec-04 第 5 节） */
 const hiddenCols = computed(() => hiddenColumnCount(activeTab.value?.statement?.columns ?? []))
+
+// ===== 右键菜单与复制（spec-04 第 4 节）=====
+
+const gridRef = ref<InstanceType<typeof ResultGrid> | null>(null)
+const menu = ref<{ x: number; y: number; hasSelection: boolean } | null>(null)
+
+function onGridContext(payload: { x: number; y: number; hasSelection: boolean }): void {
+  menu.value = payload
+}
+
+function closeMenu(): void {
+  menu.value = null
+}
+
+/** 有选区复制选区，否则复制当前页整页 */
+function copyViaMenu(format: 'csv' | 'tsv'): void {
+  const scope = menu.value?.hasSelection ? 'selection' : 'all'
+  closeMenu()
+  void gridRef.value?.copy(format, scope)
+}
+
+function onWindowKey(event: KeyboardEvent): void {
+  if (event.key === 'Escape') closeMenu()
+}
+
+onMounted(() => {
+  window.addEventListener('click', closeMenu)
+  window.addEventListener('keydown', onWindowKey)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('click', closeMenu)
+  window.removeEventListener('keydown', onWindowKey)
+})
+
+watch(() => props.activeTabId, closeMenu)
 
 const pageInput = ref(1)
 watch(
@@ -104,10 +140,12 @@ function changePage(tab: ResultTab, page: number): void {
           </div>
           <div class="grid-wrap">
             <ResultGrid
+              ref="gridRef"
               :columns="activeTab.statement.columns ?? []"
               :rows="activeTab.statement.rows ?? []"
               :page="activeTab.statement.page ?? 1"
               :page-size="activeTab.statement.pageSize ?? 100"
+              @context="onGridContext"
             />
           </div>
         </template>
@@ -123,6 +161,18 @@ function changePage(tab: ResultTab, page: number): void {
         </div>
       </div>
     </template>
+
+    <!-- 右键菜单：有选区复制选区，否则复制当前页整页 -->
+    <div
+      v-if="menu"
+      class="ctx-menu"
+      data-testid="result-context-menu"
+      :style="{ left: `${menu.x}px`, top: `${menu.y}px` }"
+      @click.stop
+    >
+      <button class="ctx-item" @click="copyViaMenu('csv')">{{ zhCN.query.copyCsv }}</button>
+      <button class="ctx-item" @click="copyViaMenu('tsv')">{{ zhCN.query.copyTsv }}</button>
+    </div>
   </div>
 </template>
 
@@ -237,5 +287,33 @@ function changePage(tab: ResultTab, page: number): void {
   border-radius: 8px;
   color: var(--joyo-success);
   font-size: 13px;
+}
+
+.ctx-menu {
+  position: fixed;
+  z-index: 3000;
+  min-width: 132px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  background: var(--joyo-bg-card);
+  border: 1px solid var(--joyo-border);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.ctx-item {
+  border: none;
+  background: none;
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--joyo-text);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.ctx-item:hover {
+  background: var(--joyo-bg-sidebar);
 }
 </style>
