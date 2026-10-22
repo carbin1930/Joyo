@@ -91,8 +91,8 @@ watch(
   },
 )
 
-function onDbChange(e: Event): void {
-  const value = (e.target as HTMLSelectElement).value
+/** el-select 的 change 事件直接给出选中值（非 DOM Event），选中后只更新页签绑定的库 */
+function onDbChange(value: string): void {
   if (activeTab.value) queryStore.setTabDb(activeTab.value.id, value)
 }
 
