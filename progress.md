@@ -9,9 +9,10 @@
 - 已完成并合入 main：spec-01 连接管理、spec-02 库表浏览、spec-03 SQL 编辑器（含多 SQL 页签/F13 精简日志/Element Plus 第一批替换，提交 `1f68538`）
 - 当前分支：`main`（与 origin/main 同步，工作区干净）
 - 实机验收：spec-03 增强改动已通过（多 SQL 页签正常；"内部错误 1500" 未再复现）
-- **进行中：spec-04 结果网格**（Tabulator 引入，只读网格已替换完成；待实机验收 → 再做复制交互与分割条）
-- 上次提交：`3dea17f feat(frontend): 结果网格接入 Tabulator`
-- **下一任务**：spec-04 任务 3 编辑器/结果区上下拖拽分割 + 状态条完善（每页大小、仅本页排序说明）
+- **spec-04 结果网格已实现完毕**（Tabulator 网格 + 复制 + 拖拽分割 + 状态条），待实机验收
+- 上次提交：`a32dc85 feat(frontend): 结果区上下拖拽分割 + 状态条`（spec-04 任务 3）
+- **下一任务**：v0.1 全量实机验收 → 打 tag `v0.1.0` → 启动 v0.2（F05/F06/F13/F14 写正式 spec）
+- F08 表数据编辑范围已确认（增删改 + 编辑锁 + 保存确认），按 roadmap 排在 v0.4，未提前实现
 
 ## 已完成（按时间）
 
@@ -29,6 +30,7 @@
   - 双击表插入：SQLyog 风格别名（下划线分段取首字母），当前库纯表名、跨库带库名限定
   -  风格库操作：双击库节点切库、当前库树中高亮
   - 中文应用菜单 + 单实例锁（防双实例抢缓存）+ 后端文件日志（logging.file.name + 菜单"打开后端日志"）
+- [x] 2026-10-22 【spec-04 任务 3】编辑器/结果区上下拖拽分割（`splitter`，编辑器 30%~75%，拖拽时全局锁定光标）+ 状态条抽为 `ResultStatusBar.vue`（截断至 N 行/隐藏列提示/“排序仅本页”/页码/每页 50·100·200·500）；query store 增加 `loadPage`/`changePageSize`（改页大小回第 1 页）+ 单测
 - [x] 2026-10-22 【spec-04 任务 2】结果网格复制：`Ctrl+C` 选区/整行 → TSV（`toTsv`）；右键菜单（`ResultContextMenu`）复制为 CSV（带表头、RFC4180 转义）/TSV，无选区时复制当前页整页；双击单元格进入编辑态仅用于复制（提交后 `cellEdited` 还原原值，不写库）；复制结果 toast 提示
 - [x] 2026-10-22 【spec-04 任务 1】结果网格接入 Tabulator 6.7（`tabulator-tables` + `@types/tabulator-tables`）：`ResultGrid.vue` 只读网格（行号列冻结/列宽拖拽/虚拟滚动/NULL 灰色斜体居中/BLOB 占位/超长 tooltip 2000 字符/50 列上限提示/0 行占位）；`use-result-grid.ts`（列截断、行号跨页连续、行数据转换）+ `use-clipboard.ts`（TSV/CSV 格式化、NULL→空串、RFC4180 转义）及 8 单测；主题映射写入 main.css；typecheck/build 通过，33+ 前端测试全过
 
