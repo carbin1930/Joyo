@@ -9,7 +9,9 @@
 - 已完成并合入 main：spec-01 连接管理、spec-02 库表浏览、spec-03 SQL 编辑器（含多 SQL 页签/F13 精简日志/Element Plus 第一批替换，提交 `1f68538`）
 - 当前分支：`main`（与 origin/main 同步，工作区干净）
 - 实机验收：spec-03 增强改动已通过（多 SQL 页签正常；"内部错误 1500" 未再复现）
-- **v0.2 进行中**：spec-05 查询历史已实现（待实机验收）；下一个 spec-06 SSH 隧道
+- **v0.2 进行中**：spec-05（历史，含两轮反馈修复）与 spec-06（SSH 隧道）已实现，待实机验收；下一个 spec-13 日志查看
+- spec-05 补充：历史改逐次记录（每次执行新增）、面板实时刷新（history:updated 广播）、时间展示到秒
+- spec-06 实现说明：JSch 用 fork `com.github.mwiede:jsch:0.2.21`；隧道生命周期与会话绑定（断开先关隧道再关池）；SSH secret 经 safeStorage 加密落盘
 - 待办：`QueryEditorView.vue` 已 529 行超出组件规范（300 行），下个 spec 间隙拆分（SQL 页签条 / 工具行 / 分割区各自成组件）
 - F08 表数据编辑范围已确认（增删改 + 编辑锁 + 保存确认），按 roadmap 排在 v0.4，未提前实现
 
@@ -29,6 +31,7 @@
   - 双击表插入：SQLyog 风格别名（下划线分段取首字母），当前库纯表名、跨库带库名限定
   -  风格库操作：双击库节点切库、当前库树中高亮
   - 中文应用菜单 + 单实例锁（防双实例抢缓存）+ 后端文件日志（logging.file.name + 菜单"打开后端日志"）
+- [x] 2026-10-25 【spec-06 SSH 隧道】实现完成：后端 `SshTunnelManager`（JSch fork 0.2.21、随机本地端口转发重试 3 次、StrictHostKeyChecking=no、错误分类归 2005）+ `ConnectionService` 隧道绑定会话生命周期 + 请求模型 `sshTunnel`；Main 侧 sshTunnel 持久化（两个 secret 加密、脱敏、secure:decrypt 扩展三字段）+ `dialog:pick-private-key`；前端连接编辑对话框 SSH 折叠区（开关/密码或私钥认证/口令/测试连接走完整链路）；单测：后端 6 例 + desktop 2 例
 - [x] 2026-10-25 【spec-05 变更】去重改逐次记录：每次执行新增一条（相同 SQL 不合并，保留执行轨迹），spec 行为 2/验收标准与实现、单测同步回写
 - [x] 2026-10-25 【spec-05 查询历史】实现完成：`history-store.ts`（JSON + 原子写/上限/损坏兜底，10 单测）+ IPC 四通道 + preload + 类型镜像；`execute` 成败均记录（失败 kind=ERROR）；`HistoryPanel.vue` 浮层（搜索防抖/双击回填/单项删除/清空二次确认）；设计变更：better-sqlite3 → JSON（避免 native 依赖），spec 已回写定稿
 - [x] 2026-10-25 【v0.1 收官】实机验收通过，打 tag `v0.1.0`；v0.2 四份 spec（05 查询历史 / 06 SSH 隧道 / 13 日志查看 / 14 资源监控）定稿，rest-api.md 同步（history 改走 Main IPC、错误码 2005、/logs 与 /health 扩展契约）
