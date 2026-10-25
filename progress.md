@@ -9,7 +9,7 @@
 - 已完成并合入 main：spec-01 连接管理、spec-02 库表浏览、spec-03 SQL 编辑器（含多 SQL 页签/F13 精简日志/Element Plus 第一批替换，提交 `1f68538`）
 - 当前分支：`main`（与 origin/main 同步，工作区干净）
 - 实机验收：spec-03 增强改动已通过（多 SQL 页签正常；"内部错误 1500" 未再复现）
-- **v0.2 收尾**：spec-05、06、13、14 全部实现（06 用户暂无跳板机环境验收搁置）；v0.2 功能开发完毕，进入整体验收
+- **v0.3 进行中**：spec-15 导出（F07）spec 草稿已写（`docs/20-specs/15-export.md`，待用户确认），关键设计：后端流式 `POST /export` + Main 中转写盘（.part→rename 防半成品）、CSV 带 BOM、INSERT 手填表名、xlsx 用 Apache POI SXSSF
 - spec-14 实现说明：`/health` data 扩展 `jvm`（heap 取 Runtime、cpuLoad 取 OS bean，首采为负输出 null）；Main `metrics-sampler.ts` 每 3s 推 `metrics:tick`（Electron 汇总 + /health 拉取，连续失败 2 次置离线）；渲染层 `StatusBar.vue` 全局底栏只接收不轮询；采样器在启动轮询结束后启动
 - spec-05 补充：历史改逐次记录（每次执行新增）、面板实时刷新（history:updated 广播）、时间展示到秒
 - spec-06 实现说明：JSch 用 fork `com.github.mwiede:jsch:0.2.21`；隧道生命周期与会话绑定（断开先关隧道再关池）；SSH secret 经 safeStorage 加密落盘

@@ -245,6 +245,6 @@ interface SaveConnectionInput {
 
 - 查询历史（spec-05）：**不经过后端**。由 Electron Main 持久化（better-sqlite3），IPC 通道 `history:append` / `history:list` / `history:delete` / `history:clear`（契约见 spec-05 第 3 节）
 - SSH 隧道（spec-06）：连接模型 `sshTunnel` 对象落地；`/connections/test` 与 session 请求体增加可选 `sshTunnel` 字段（JSch fork `com.github.mwiede:jsch:0.2.x`，隧道由后端建立，错误码 2005）
-- `POST /export`（spec-07 导出，流式响应）
+- `POST /export`（spec-15 导出/F07，v0.3，流式响应）
 - `POST /queries/{queryId}/cancel`（查询中断，v0.4）
 - `POST /sync/compare`、`POST /sync/execute`（spec-12 表/数据同步，v0.5）
