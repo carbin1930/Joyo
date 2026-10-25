@@ -6,7 +6,7 @@ import path from 'node:path'
  * - 读写只发生在 Electron Main 进程；history.json 与 connections.json 同层、同原子写模式
  * - 实现说明：spec-05 原设计 better-sqlite3，因 desktop 保持零 native 依赖
  *   （避免 electron-rebuild 链路）改为 JSON 存储；上限 1000 条、追加型数据，行为完全等价
- * - 去重：sql 逐字节相同 → 原位更新（不新增行）
+ * - 逐次记录：每次执行新增一条，相同 SQL 不合并（2026-10-25 用户确认）
  * 本模块不依赖 electron，便于纯 node 单元测试。
  */
 
@@ -50,18 +50,13 @@ function newHistoryFile(): HistoryFile {
 export class HistoryStore {
   constructor(private readonly filePath: string) {}
 
-  /** IPC: history:append（去重 + 上限裁剪 + 原子写） */
+  /** IPC: history:append（逐次记录 + 上限裁剪 + 原子写） */
   append(entry: HistoryEntryInput): void {
     if (!entry.sql.trim()) return
     const file = this.load()
-    const existing = file.items.find((i) => i.sql === entry.sql)
-    if (existing) {
-      // 行为 2：相同 SQL 原位更新，不新增行
-      Object.assign(existing, entry)
-    } else {
-      file.items.push({ id: file.nextId, ...entry })
-      file.nextId += 1
-    }
+    // 行为 2（2026-10-25 确认）：每次执行都新增一条，保留完整执行轨迹，相同 SQL 不合并
+    file.items.push({ id: file.nextId, ...entry })
+    file.nextId += 1
     if (file.items.length > MAX_HISTORY_ITEMS) {
       file.items = file.items.slice(-MAX_HISTORY_ITEMS)
     }

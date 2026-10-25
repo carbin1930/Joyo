@@ -42,14 +42,19 @@ describe('HistoryStore', () => {
     expect(items[0].id).toBe(2)
   })
 
-  it('append 相同 SQL 原位更新，不新增行', () => {
+  it('append 相同 SQL 各记一条，保留执行轨迹（2026-10-25 确认）', () => {
     store.append(entry({ rowCount: 1, executedAt: '2026-10-25T10:00:00Z' }))
     store.append(entry({ rowCount: 5, executedAt: '2026-10-25T10:05:00Z' }))
+    store.append(entry({ rowCount: 8, executedAt: '2026-10-25T10:07:00Z' }))
 
     const items = store.list()
-    expect(items).toHaveLength(1)
-    expect(items[0].rowCount).toBe(5)
-    expect(items[0].executedAt).toBe('2026-10-25T10:05:00Z')
+    expect(items).toHaveLength(3)
+    expect(items.map((i) => i.executedAt)).toEqual([
+      '2026-10-25T10:07:00Z',
+      '2026-10-25T10:05:00Z',
+      '2026-10-25T10:00:00Z',
+    ])
+    expect(items[0].rowCount).toBe(8)
   })
 
   it('append 空白 SQL 被忽略', () => {

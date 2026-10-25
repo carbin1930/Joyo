@@ -8,7 +8,7 @@
 
 ## 1. 功能描述
 
-执行过的 SQL 自动保存历史，支持关键词搜索与一键回填到编辑器（PRD US-06）。历史是纯本地数据，与连接配置同层：**持久化在 Electron Main 进程（SQLite），不经过 Java 后端**（后端保持无状态，无需新增依赖）。
+执行过的 SQL 自动保存历史，支持关键词搜索与一键回填到编辑器（PRD US-06）。历史是纯本地数据，与连接配置同层：**持久化在 Electron Main 进程（JSON 文件），不经过 Java 后端**（后端保持无状态，无需新增依赖）。
 
 ## 2. 界面设计
 
@@ -47,7 +47,7 @@ interface HistoryItem extends HistoryEntry { id: number }
 ## 4. 行为细节
 
 1. **记录时机**：query store `execute()` 结束后（成功与失败都记）调用 `history:append`；多语句记整段原始 SQL 一次，`kind='MULTI'`、`rowCount=null`；单语句记实际 kind / elapsedMs（总耗时）/ rowCount（SELECT 取 totalRows，其余 null）；**失败条目 `kind='ERROR'`、`elapsedMs=0`**（错误信息入 errorMessage）。
-2. **去重**：append 前按 `sql` 逐字节精确匹配查重，命中则**原位更新**该行 executed_at 与结果字段，不新增行（相同 SQL 永远只有一条）。
+2. **逐次记录（2026-10-25 用户确认，替代原去重设计）**：每次执行都新增一条记录，保留完整执行轨迹；相同 SQL 不合并（去重交给搜索，未来可按需加"仅看最新"过滤）。
 3. **上限**：append 后若总行数 > 1000，按 id 升序删除最旧直至 1000。
 4. **搜索**：`sql LIKE '%keyword%'`，大小写不敏感（SQLite `LIKE` 默认对 ASCII 不敏感，足够 v0.2）。
 5. **回填**：替换 Monaco 全部内容，不自动执行。
@@ -65,7 +65,7 @@ interface HistoryItem extends HistoryEntry { id: number }
 ## 6. 验收标准
 
 - [ ] 执行 SQL（成功/失败各一次）后打开历史，最近一条为刚执行的语句，失败项标红
-- [ ] 同一 SQL 连续执行 3 次，列表仍只有 1 条且时间更新为最后一次
+- [ ] 同一 SQL 连续执行 3 次，列表出现 3 条且时间各不相同（最新置顶）
 - [ ] 关键词搜索大小写不敏感命中子串
 - [ ] 双击条目，编辑器内容被替换且焦点回到编辑器
 - [ ] 手工插入 1001 条（测试通道或脚本）后再执行 1 条，总行数为 1000 且最旧的被删除
