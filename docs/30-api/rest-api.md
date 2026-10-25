@@ -22,6 +22,19 @@
 { "code": 0, "message": "ok", "data": { "app": "joyo-backend", "version": "0.1.0", "uptimeSec": 12 } }
 ```
 
+### GET /logs（spec-13）
+
+后端文件日志尾部（日志文件即 log4j2 文件 appender：`JOYO_LOG_FILE`，缺省 `logs/backend.log`）。
+
+- 查询参数：`tail`，范围 **1-2000**，默认 200；越界返回 1001
+- 响应 data：
+
+```json
+{ "filePath": "D:/.../backend.log", "sizeBytes": 123456, "lines": ["...", "..."] }
+```
+
+- 日志文件不存在（尚未产生）→ `sizeBytes: 0, lines: []`（前端显示"暂无日志"）
+
 ## 2. 连接管理（spec-01）
 
 ### POST /connections/test
@@ -224,5 +237,4 @@ interface SaveConnectionInput {
 - `POST /export`（spec-07 导出，流式响应）
 - `POST /queries/{queryId}/cancel`（查询中断，v0.4）
 - `POST /sync/compare`、`POST /sync/execute`（spec-12 表/数据同步，v0.5）
-- `GET /logs?tail=200`（spec-13 日志查看，v0.2）：data `{ filePath, sizeBytes, lines[] }`，tail 范围 1-2000
 - `/health` 响应扩展（spec-14 资源监控，v0.2）：data 增加 `jvm: { heapUsedMb, heapMaxMb, cpuLoad }`（堆取 Runtime，进程 CPU 取 OperatingSystemMXBean.getProcessCpuLoad，后端增量采样）

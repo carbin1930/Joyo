@@ -7,12 +7,12 @@ export function getHealth(): Promise<HealthData> {
 }
 
 export interface LogTailResponse {
-  path: string
+  filePath: string
+  sizeBytes: number
   lines: string[]
-  truncated: boolean
 }
 
-/** 后端日志尾部（F13 精简版） */
+/** 后端日志尾部（spec-13：tail 范围 1-2000，文件不存在时 lines 为空） */
 export function getLogs(tail = 200): Promise<LogTailResponse> {
   return request<LogTailResponse>('GET', `/api/v1/logs?tail=${tail}`)
 }

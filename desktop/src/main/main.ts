@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, shell } from 'electron'
 import path from 'node:path'
 import { registerConnectionsIpc } from './connections-ipc'
 import { HistoryStore, historyFilePath } from './history-store'
@@ -59,8 +59,15 @@ function buildMenu(): void {
         { label: '缩小', role: 'zoomOut' },
         { label: '重置缩放', role: 'resetZoom' },
         { type: 'separator' },
-        { label: '打开后端日志', click: () => win?.webContents.send('joyo:open-logs') },
         { label: '开发者工具', role: 'toggleDevTools' },
+      ],
+    },
+    {
+      // spec-13 第 2 节：工具 → 应用日志 / 打开日志目录
+      label: '工具',
+      submenu: [
+        { label: '应用日志', click: () => win?.webContents.send('joyo:open-logs') },
+        { label: '打开日志目录', click: () => shell.showItemInFolder(backendLogPath()) },
       ],
     },
     {
@@ -132,6 +139,14 @@ app.whenReady().then(async () => {
 
     // 查询历史持久化（spec-05）：userData/history.json，不经后端
     registerHistoryIpc(new HistoryStore(historyFilePath(app.getPath('userData'))))
+
+    // spec-13：渲染层"打开目录"与"复制全部"（渲染进程无 shell/clipboard 权限）
+    ipcMain.handle('shell:show-item', (_event, target: string) => {
+      shell.showItemInFolder(target)
+    })
+    ipcMain.handle('clipboard:write-text', (_event, text: string) => {
+      clipboard.writeText(text)
+    })
 
     createWindow()
   } catch (e) {

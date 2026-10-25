@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { atomicWriteJson } from './atomic-write'
 
 /**
  * 查询历史持久化唯一模块（spec-05，rest-api.md 连接管理节 IPC 白名单）：
@@ -106,9 +107,7 @@ export class HistoryStore {
   }
 
   private persist(file: HistoryFile): void {
-    const tmpPath = `${this.filePath}.tmp`
-    fs.writeFileSync(tmpPath, JSON.stringify(file), 'utf-8')
-    fs.renameSync(tmpPath, this.filePath)
+    atomicWriteJson(this.filePath, file)
   }
 }
 

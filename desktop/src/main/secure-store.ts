@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { atomicWriteJson } from './atomic-write'
 
 /**
  * 连接配置持久化唯一模块（docs/10-architecture/data-model.md）：
@@ -240,9 +241,7 @@ export class ConnectionsStore {
   }
 
   private persist(file: ConnectionsFile): void {
-    const tmpPath = `${this.filePath}.tmp`
-    fs.writeFileSync(tmpPath, JSON.stringify(file, null, 2), 'utf-8')
-    fs.renameSync(tmpPath, this.filePath)
+    atomicWriteJson(this.filePath, file, 2)
   }
 }
 

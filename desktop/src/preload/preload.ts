@@ -18,6 +18,10 @@ contextBridge.exposeInMainWorld('joyo', {
   onOpenLogs: (cb: () => void): void => {
     ipcRenderer.on('joyo:open-logs', () => cb())
   },
+  /** spec-13：在系统文件管理器中定位文件（日志"打开目录"按钮） */
+  showItemInFolder: (target: string): Promise<void> => ipcRenderer.invoke('shell:show-item', target),
+  /** spec-13：写系统剪贴板（日志"复制全部"按钮） */
+  copyText: (text: string): Promise<void> => ipcRenderer.invoke('clipboard:write-text', text),
   /** 查询历史有新增（spec-05）：返回取消订阅函数 */
   onHistoryUpdated: (cb: () => void): (() => void) => {
     const listener = () => cb()

@@ -94,6 +94,10 @@ declare global {
       getLaunchConfig(): Promise<JoyoLaunchConfig>
       /** 菜单"打开后端日志"事件（主进程 → 渲染进程） */
       onOpenLogs(cb: () => void): void
+      /** spec-13：系统文件管理器定位文件 */
+      showItemInFolder(target: string): Promise<void>
+      /** spec-13：写系统剪贴板 */
+      copyText(text: string): Promise<void>
       /** 查询历史有新增（spec-05）；返回取消订阅函数 */
       onHistoryUpdated(cb: () => void): () => void
       connections: {

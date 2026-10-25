@@ -16,9 +16,17 @@ export const zhCN = {
   },
   log: {
     entry: '后端日志',
-    title: '后端日志（尾部 200 行，每 3 秒自动刷新）',
+    // ===== 日志查看（spec-13 第 2 节） =====
+    title: '应用日志',
     loading: '刷新中…',
     refresh: '刷新',
+    autoRefresh: '自动刷新',
+    copyAll: '复制全部',
+    copied: '日志已复制到剪贴板',
+    openDir: '打开目录',
+    backToBottom: '回到底部',
+    empty: '暂无日志',
+    offline: '后端未就绪，显示的是最后快照',
   },
   query: {
     run: '运行',

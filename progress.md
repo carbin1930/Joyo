@@ -9,9 +9,10 @@
 - 已完成并合入 main：spec-01 连接管理、spec-02 库表浏览、spec-03 SQL 编辑器（含多 SQL 页签/F13 精简日志/Element Plus 第一批替换，提交 `1f68538`）
 - 当前分支：`main`（与 origin/main 同步，工作区干净）
 - 实机验收：spec-03 增强改动已通过（多 SQL 页签正常；"内部错误 1500" 未再复现）
-- **v0.2 进行中**：spec-05（历史，含两轮反馈修复）与 spec-06（SSH 隧道）已实现，待实机验收；下一个 spec-13 日志查看
+- **v0.2 进行中**：spec-05、06、13 已实现（06 用户暂无跳板机环境，验收搁置）；下一个 spec-14 资源监控
 - spec-05 补充：历史改逐次记录（每次执行新增）、面板实时刷新（history:updated 广播）、时间展示到秒
 - spec-06 实现说明：JSch 用 fork `com.github.mwiede:jsch:0.2.21`；隧道生命周期与会话绑定（断开先关隧道再关池）；SSH secret 经 safeStorage 加密落盘
+- spec-13 实现说明：抽 LogView 共享组件（页签版 + 弹窗版）；`GET /logs` 契约落地（tail 1-2000 越界 1001、文件不存在空态）；菜单新增"工具"组（应用日志/打开日志目录）；新增 `shell:show-item`、`clipboard:write-text` IPC；`atomic-write.ts` 统一 JSON 原子写并兜底 Windows rename EPERM（实测高频写触发）
 - 待办：`QueryEditorView.vue` 已 529 行超出组件规范（300 行），下个 spec 间隙拆分（SQL 页签条 / 工具行 / 分割区各自成组件）
 - F08 表数据编辑范围已确认（增删改 + 编辑锁 + 保存确认），按 roadmap 排在 v0.4，未提前实现
 
