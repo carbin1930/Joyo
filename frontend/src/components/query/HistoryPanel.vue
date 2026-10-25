@@ -83,7 +83,8 @@ async function clearAll(): Promise<void> {
 function formatTime(iso: string): string {
   const d = new Date(iso)
   const pad = (n: number) => String(n).padStart(2, '0')
-  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  // 逐次记录后同一条 SQL 可能连着执行多次，展示到秒便于区分
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 /** 第二行摘要：连接 · 库 · 时间 · 耗时 / 行数 */
