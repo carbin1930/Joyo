@@ -30,6 +30,8 @@
 | `history:delete` | `id: number` | `boolean` |
 | `history:clear` | 无 | `void` |
 
+事件通道（Main → 渲染）：`history:updated`——`history:append` 完成后广播，打开中的历史面板收到后自动重新 `list`（面板打开时执行 SQL 实时新增，2026-10-25 用户反馈补充；preload 暴露 `onHistoryUpdated(cb)` 并返回取消订阅函数）。
+
 ```ts
 // 类型镜像到 frontend/src/types/ipc.d.ts
 interface HistoryEntry {

@@ -18,6 +18,12 @@ contextBridge.exposeInMainWorld('joyo', {
   onOpenLogs: (cb: () => void): void => {
     ipcRenderer.on('joyo:open-logs', () => cb())
   },
+  /** 查询历史有新增（spec-05）：返回取消订阅函数 */
+  onHistoryUpdated: (cb: () => void): (() => void) => {
+    const listener = () => cb()
+    ipcRenderer.on('history:updated', listener)
+    return () => ipcRenderer.removeListener('history:updated', listener)
+  },
   connections: {
     list: () => ipcRenderer.invoke('connections:list'),
     save: (input: unknown) => ipcRenderer.invoke('connections:save', input),

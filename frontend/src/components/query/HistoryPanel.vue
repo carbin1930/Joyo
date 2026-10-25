@@ -38,8 +38,18 @@ watch(keyword, () => {
   debounceTimer = setTimeout(() => void load(), 300)
 })
 
-onMounted(() => void load())
-onBeforeUnmount(() => clearTimeout(debounceTimer))
+let offHistoryUpdated: (() => void) | undefined
+
+onMounted(() => {
+  void load()
+  // 面板打开期间执行 SQL 后实时刷新（Main 在 history:append 后广播）
+  offHistoryUpdated = window.joyo?.onHistoryUpdated(() => void load())
+})
+
+onBeforeUnmount(() => {
+  clearTimeout(debounceTimer)
+  offHistoryUpdated?.()
+})
 
 function fill(item: HistoryItem): void {
   emit('fill', item.sql)

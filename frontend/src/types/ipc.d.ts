@@ -60,6 +60,8 @@ declare global {
       getLaunchConfig(): Promise<JoyoLaunchConfig>
       /** 菜单"打开后端日志"事件（主进程 → 渲染进程） */
       onOpenLogs(cb: () => void): void
+      /** 查询历史有新增（spec-05）；返回取消订阅函数 */
+      onHistoryUpdated(cb: () => void): () => void
       connections: {
         list(): Promise<ConnectionListItem[]>
         save(input: SaveConnectionInput): Promise<ConnectionListItem>
