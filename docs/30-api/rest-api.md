@@ -184,6 +184,7 @@ interface SaveConnectionInput {
 | 2002 | 200 | 认证失败 | "用户名或密码错误" |
 | 2003 | 200 | 连接超时 | "连接超时" |
 | 2004 | 200 | 连接会话已失效 | "连接已断开，请重新连接" |
+| 2005 | 200 | SSH 隧道建立失败（spec-06） | "SSH 隧道连接失败：{原因}" |
 | 2101 | 200 | 元数据读取失败（含权限不足） | 显示 message |
 | 3001 | 200 | SQL 语法/执行错误 | 显示 MySQL 原始错误 |
 | 3002 | 200 | 查询超时 | "查询超时（xx 秒）" |
@@ -196,10 +197,10 @@ interface SaveConnectionInput {
 
 ## 6. v0.2+ 预留端点（只登记不实现）
 
-- `GET /history?keyword=&page=`、`DELETE /history/{id}`（spec-05 查询历史）
-- 连接模型增加 `sshTunnel` 对象（spec-06）
+- 查询历史（spec-05）：**不经过后端**。由 Electron Main 持久化（better-sqlite3），IPC 通道 `history:append` / `history:list` / `history:delete` / `history:clear`（契约见 spec-05 第 3 节）
+- SSH 隧道（spec-06）：连接模型 `sshTunnel` 对象落地；`/connections/test` 与 session 请求体增加可选 `sshTunnel` 字段（JSch fork `com.github.mwiede:jsch:0.2.x`，隧道由后端建立，错误码 2005）
 - `POST /export`（spec-07 导出，流式响应）
 - `POST /queries/{queryId}/cancel`（查询中断，v0.4）
 - `POST /sync/compare`、`POST /sync/execute`（spec-12 表/数据同步，v0.5）
-- `GET /logs?tail=200`（F13 日志查看，v0.2；读取文件日志尾部）
-- `/health` 响应扩展（F14 资源监控，v0.2）：data 增加 `jvm: { heapUsedMb, heapMaxMb, cpuLoad }`，JVM 堆内存取 Runtime，进程 CPU 取 OperatingSystemMXBean.getProcessCpuLoad（增量采样）
+- `GET /logs?tail=200`（spec-13 日志查看，v0.2）：data `{ filePath, sizeBytes, lines[] }`，tail 范围 1-2000
+- `/health` 响应扩展（spec-14 资源监控，v0.2）：data 增加 `jvm: { heapUsedMb, heapMaxMb, cpuLoad }`（堆取 Runtime，进程 CPU 取 OperatingSystemMXBean.getProcessCpuLoad，后端增量采样）
