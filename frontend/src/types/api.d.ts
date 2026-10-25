@@ -12,6 +12,22 @@ export interface HealthData {
   app: string
   version: string
   uptimeSec: number
+  /** JVM 资源指标（spec-14） */
+  jvm?: JvmInfo | null
+}
+
+/** JVM 资源指标（spec-14）：cpuLoad 首次采样为 null，前端显示"--" */
+export interface JvmInfo {
+  heapUsedMb: number | null
+  heapMaxMb: number | null
+  cpuLoad: number | null
+}
+
+/** 资源监控推送帧（spec-14，Electron Main 每 3s 一帧） */
+export interface MetricsTick {
+  backendUp: boolean
+  electron: { processCount: number; memMb: number; cpuPercent: number }
+  jvm: JvmInfo | null
 }
 
 // ===== 元数据（docs/30-api/rest-api.md 元数据节，与后端 MetadataResponses 一一对应） =====

@@ -6,6 +6,7 @@ import { useQueryStore } from '@/stores/query'
 import ConnectionList from '@/components/connection/ConnectionList.vue'
 import SchemaTree from '@/components/schema/SchemaTree.vue'
 import LogViewerDialog from '@/components/log/LogViewerDialog.vue'
+import StatusBar from '@/components/status/StatusBar.vue'
 import ToastHost from '@/components/ToastHost.vue'
 import { zhCN } from '@/locales/zh-CN'
 
@@ -32,19 +33,23 @@ onMounted(() => {
 
 <template>
   <div class="app-layout">
-    <aside class="app-sidebar">
-      <div class="app-logo">Joyo</div>
-      <!-- spec-01：连接管理；spec-02：对象树 -->
-      <ConnectionList />
-      <SchemaTree />
-      <!-- F13 精简版：后端日志查看 -->
-      <button class="log-entry" data-testid="open-logs" @click="openLogs">
-        {{ zhCN.log.entry }}
-      </button>
-    </aside>
-    <main class="app-main">
-      <router-view />
-    </main>
+    <div class="app-body">
+      <aside class="app-sidebar">
+        <div class="app-logo">Joyo</div>
+        <!-- spec-01：连接管理；spec-02：对象树 -->
+        <ConnectionList />
+        <SchemaTree />
+        <!-- F13 精简版：后端日志查看 -->
+        <button class="log-entry" data-testid="open-logs" @click="openLogs">
+          {{ zhCN.log.entry }}
+        </button>
+      </aside>
+      <main class="app-main">
+        <router-view />
+      </main>
+    </div>
+    <!-- spec-14：全局资源状态栏 -->
+    <StatusBar />
     <ToastHost />
     <LogViewerDialog :open="logOpen" @close="logOpen = false" />
   </div>
@@ -71,7 +76,15 @@ onMounted(() => {
 <style scoped>
 .app-layout {
   display: flex;
+  flex-direction: column;
   height: 100vh;
+}
+
+/* spec-14：主区改为行布局，底部留出状态栏 */
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 
 .app-sidebar {

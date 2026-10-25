@@ -16,11 +16,22 @@
 
 ### GET /health
 
-健康检查，供 Electron Main 启动轮询。
+健康检查，供 Electron Main 启动轮询；spec-14 起附带 JVM 资源指标（资源监控采样器每 3s 拉取）。
 
 ```json
-{ "code": 0, "message": "ok", "data": { "app": "joyo-backend", "version": "0.1.0", "uptimeSec": 12 } }
+{
+  "code": 0,
+  "message": "ok",
+  "data": {
+    "app": "joyo-backend",
+    "version": "0.1.0",
+    "uptimeSec": 12,
+    "jvm": { "heapUsedMb": 210.5, "heapMaxMb": 512.0, "cpuLoad": 0.08 }
+  }
+}
 ```
+
+- `jvm.cpuLoad`：`OperatingSystemMXBean.getProcessCpuLoad()`，首次调用（无基线）返回负数 → 输出 `null`
 
 ### GET /logs（spec-13）
 
@@ -237,4 +248,3 @@ interface SaveConnectionInput {
 - `POST /export`（spec-07 导出，流式响应）
 - `POST /queries/{queryId}/cancel`（查询中断，v0.4）
 - `POST /sync/compare`、`POST /sync/execute`（spec-12 表/数据同步，v0.5）
-- `/health` 响应扩展（spec-14 资源监控，v0.2）：data 增加 `jvm: { heapUsedMb, heapMaxMb, cpuLoad }`（堆取 Runtime，进程 CPU 取 OperatingSystemMXBean.getProcessCpuLoad，后端增量采样）

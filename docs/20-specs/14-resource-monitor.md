@@ -3,7 +3,7 @@
 - 规格编号：spec-14
 - 功能名称：资源监控（F14）
 - 所属版本：v0.2
-- 状态：草稿（待确认）
+- 状态：已定稿并实现（2026-10-25。实现说明：`GET /health` data 扩展 `jvm` 已登记 rest-api.md 第 1 节；Main 采样器 `metrics-sampler.ts`，汇总逻辑纯函数可测；渲染层 `StatusBar.vue` 只接收不轮询）
 - 依赖 spec：spec-01（/health 轮询基础设施）
 
 ## 1. 功能描述

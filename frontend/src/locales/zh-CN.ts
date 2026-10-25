@@ -28,6 +28,11 @@ export const zhCN = {
     empty: '暂无日志',
     offline: '后端未就绪，显示的是最后快照',
   },
+  status: {
+    // ===== 状态栏（spec-14 第 2 节） =====
+    backendOffline: '后端离线',
+    tooltipBackend: 'Joyo 后端（Spring Boot Sidecar）',
+  },
   query: {
     run: '运行',
     running: '执行中…',

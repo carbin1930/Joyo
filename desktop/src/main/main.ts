@@ -6,6 +6,7 @@ import { registerHistoryIpc } from './history-ipc'
 import { SafeStorageCipher } from './safe-storage-cipher'
 import { ConnectionsStore, connectionsFilePath } from './secure-store'
 import { resolveBackend, type ResolvedBackend } from './sidecar'
+import { createHealthFetcher, startMetricsSampler } from './metrics-sampler'
 
 /**
  * Electron 主进程入口（docs/10-architecture/overview.md 第 2 节）：
@@ -149,6 +150,13 @@ app.whenReady().then(async () => {
     })
 
     createWindow()
+
+    // spec-14：资源监控采样器（启动轮询结束后启动，每 3s 推送 metrics:tick）
+    startMetricsSampler(
+      () => win,
+      () => app.getAppMetrics(),
+      createHealthFetcher(backend.baseUrl, backend.token),
+    )
   } catch (e) {
     dialog.showErrorBox('Joyo 启动失败', String(e))
     app.quit()

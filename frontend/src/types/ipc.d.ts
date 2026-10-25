@@ -2,6 +2,8 @@
 // 与 desktop/src/preload/preload.ts 的 contextBridge 暴露签名一一对应；
 // 载荷契约见 docs/30-api/rest-api.md 连接管理节（IPC 白名单）。
 
+import type { MetricsTick } from './api'
+
 export interface JoyoLaunchConfig {
   /** 后端地址，如 http://127.0.0.1:18080 */
   baseUrl: string
@@ -98,6 +100,8 @@ declare global {
       showItemInFolder(target: string): Promise<void>
       /** spec-13：写系统剪贴板 */
       copyText(text: string): Promise<void>
+      /** spec-14：订阅资源监控推送（Main 每 3s 一帧）；返回取消订阅函数 */
+      onMetrics(cb: (tick: MetricsTick) => void): () => void
       /** 查询历史有新增（spec-05）；返回取消订阅函数 */
       onHistoryUpdated(cb: () => void): () => void
       connections: {
