@@ -1,5 +1,17 @@
 import { request } from './http'
 
+/** SSH 隧道 REST 载荷（spec-06；password/passphrase 明文仅经 localhost 回环，后端不落盘） */
+export interface SshTunnelPayload {
+  enabled: boolean
+  host: string
+  port: number
+  username: string
+  authType: 'password' | 'privateKey'
+  password?: string
+  privateKeyPath?: string
+  passphrase?: string
+}
+
 /** 连接表单数据（用于测试连接与建立会话；后端字段见 rest-api.md 连接管理节） */
 export interface ConnectionFormPayload {
   host: string
@@ -7,6 +19,7 @@ export interface ConnectionFormPayload {
   username: string
   password: string
   defaultDatabase?: string
+  sshTunnel?: SshTunnelPayload
 }
 
 export interface ConnectionTestResult {

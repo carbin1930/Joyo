@@ -32,8 +32,20 @@ const form = reactive({
   username: 'root',
   password: '',
   defaultDatabase: '',
+  ssh: {
+    enabled: false,
+    host: '',
+    port: 22,
+    username: '',
+    authType: 'password' as 'password' | 'privateKey',
+    password: '',
+    privateKeyPath: '',
+    passphrase: '',
+  },
 })
 const showPassword = ref(false)
+const sshOpen = ref(false)
+const showSshPassword = ref(false)
 const testing = ref(false)
 const testResult = ref('')
 const testOk = ref(false)
@@ -56,6 +68,24 @@ watch(
       form.defaultDatabase = source.defaultDatabase
       // 编辑模式：解密回填原密码；复制模式：不复制密码（安全红线）
       form.password = props.editing ? ((await connectionsIpc.decryptPassword(source.id)) ?? '') : ''
+      // spec-06：SSH 隧道配置回填；secret 解密回填仅编辑模式（复制不复制密码，同安全红线）
+      const ssh = source.sshTunnel
+      form.ssh.enabled = ssh?.enabled ?? false
+      form.ssh.host = ssh?.host ?? ''
+      form.ssh.port = ssh?.port ?? 22
+      form.ssh.username = ssh?.username ?? ''
+      form.ssh.authType = ssh?.authType ?? 'password'
+      form.ssh.privateKeyPath = ssh?.privateKeyPath ?? ''
+      if (props.editing && ssh?.enabled) {
+        form.ssh.password =
+          ssh.authType === 'password' ? ((await connectionsIpc.decryptPassword(source.id, 'sshPassword')) ?? '') : ''
+        form.ssh.passphrase =
+          ssh.authType === 'privateKey' ? ((await connectionsIpc.decryptPassword(source.id, 'sshPassphrase')) ?? '') : ''
+      } else {
+        form.ssh.password = ''
+        form.ssh.passphrase = ''
+      }
+      sshOpen.value = ssh?.enabled ?? false
     } else {
       form.name = ''
       form.host = '127.0.0.1'
@@ -63,6 +93,15 @@ watch(
       form.username = 'root'
       form.password = ''
       form.defaultDatabase = ''
+      form.ssh.enabled = false
+      form.ssh.host = ''
+      form.ssh.port = 22
+      form.ssh.username = ''
+      form.ssh.authType = 'password'
+      form.ssh.password = ''
+      form.ssh.privateKeyPath = ''
+      form.ssh.passphrase = ''
+      sshOpen.value = false
     }
   },
 )
@@ -74,7 +113,33 @@ function validate(): string | null {
   if (!Number.isInteger(form.port) || form.port < 1 || form.port > 65535)
     return zhCN.connection.validate.port
   if (!form.username.trim()) return zhCN.connection.validate.username
+  // spec-06 第 2 节：启用 SSH 时的必填校验
+  if (form.ssh.enabled) {
+    if (!form.ssh.host.trim()) return zhCN.connection.ssh.validateHost
+    if (!Number.isInteger(form.ssh.port) || form.ssh.port < 1 || form.ssh.port > 65535)
+      return zhCN.connection.validate.port
+    if (!form.ssh.username.trim()) return zhCN.connection.ssh.validateUsername
+    if (form.ssh.authType === 'password' && !form.ssh.password)
+      return zhCN.connection.ssh.validatePassword
+    if (form.ssh.authType === 'privateKey' && !form.ssh.privateKeyPath.trim())
+      return zhCN.connection.ssh.validateKeyPath
+  }
   return null
+}
+
+/** SSH 保存入参：只带当前认证方式的 secret，另一个传 undefined（保留原值，spec-06 边界"改认证方式旧密码保留"） */
+function buildSshInput() {
+  const s = form.ssh
+  const base = {
+    enabled: s.enabled,
+    host: s.host.trim(),
+    port: s.port,
+    username: s.username.trim(),
+    authType: s.authType,
+    privateKeyPath: s.privateKeyPath.trim(),
+  }
+  if (!s.enabled) return base
+  return s.authType === 'password' ? { ...base, password: s.password } : { ...base, passphrase: s.passphrase }
 }
 
 function toPayload() {
@@ -84,6 +149,17 @@ function toPayload() {
     username: form.username.trim(),
     password: form.password,
     defaultDatabase: form.defaultDatabase.trim(),
+    sshTunnel: buildSshInput(),
+  }
+}
+
+/** spec-06：私钥文件选择器（Electron 原生对话框） */
+async function onPickKey(): Promise<void> {
+  try {
+    const picked = await connectionsIpc.pickPrivateKey()
+    if (picked) form.ssh.privateKeyPath = picked
+  } catch (e) {
+    toast('error', e instanceof Error ? e.message : String(e))
   }
 }
 
@@ -171,6 +247,77 @@ async function onSave(): Promise<void> {
         <span class="form-label">{{ zhCN.connection.field.database }}</span>
         <input v-model="form.defaultDatabase" type="text" />
       </label>
+
+      <div class="ssh-section" data-testid="ssh-section">
+        <div class="ssh-header" @click="sshOpen = !sshOpen">
+          <span class="ssh-caret">{{ sshOpen ? '▾' : '▸' }}</span>
+          <span>{{ zhCN.connection.ssh.title }}</span>
+          <label class="ssh-toggle" @click.stop>
+            <input v-model="form.ssh.enabled" type="checkbox" />
+            <span>{{ zhCN.connection.ssh.enabled }}</span>
+          </label>
+        </div>
+        <template v-if="sshOpen">
+          <label class="form-row">
+            <span class="form-label">{{ zhCN.connection.ssh.host }}</span>
+            <input
+              v-model="form.ssh.host"
+              type="text"
+              :disabled="!form.ssh.enabled"
+              :placeholder="zhCN.connection.ssh.hostPlaceholder"
+            />
+          </label>
+          <label class="form-row">
+            <span class="form-label">{{ zhCN.connection.ssh.port }}</span>
+            <input v-model.number="form.ssh.port" type="number" min="1" max="65535" :disabled="!form.ssh.enabled" />
+          </label>
+          <label class="form-row">
+            <span class="form-label">{{ zhCN.connection.ssh.username }}</span>
+            <input v-model="form.ssh.username" type="text" :disabled="!form.ssh.enabled" />
+          </label>
+          <div class="form-row">
+            <span class="form-label">{{ zhCN.connection.ssh.authType }}</span>
+            <span class="auth-radios">
+              <label>
+                <input v-model="form.ssh.authType" type="radio" value="password" :disabled="!form.ssh.enabled" />
+                {{ zhCN.connection.ssh.authPassword }}
+              </label>
+              <label>
+                <input v-model="form.ssh.authType" type="radio" value="privateKey" :disabled="!form.ssh.enabled" />
+                {{ zhCN.connection.ssh.authPrivateKey }}
+              </label>
+            </span>
+          </div>
+          <label v-if="form.ssh.authType === 'password'" class="form-row">
+            <span class="form-label">{{ zhCN.connection.ssh.password }}</span>
+            <span class="password-wrap">
+              <input
+                v-model="form.ssh.password"
+                :type="showSshPassword ? 'text' : 'password'"
+                :disabled="!form.ssh.enabled"
+              />
+              <button type="button" class="toggle-eye" @click="showSshPassword = !showSshPassword">
+                {{ showSshPassword ? zhCN.connection.hide : zhCN.connection.show }}
+              </button>
+            </span>
+          </label>
+          <template v-else>
+            <div class="form-row">
+              <span class="form-label">{{ zhCN.connection.ssh.privateKeyPath }}</span>
+              <span class="password-wrap">
+                <input v-model="form.ssh.privateKeyPath" type="text" :disabled="!form.ssh.enabled" />
+                <button type="button" class="toggle-eye" :disabled="!form.ssh.enabled" @click="onPickKey">
+                  {{ zhCN.connection.ssh.pickKey }}
+                </button>
+              </span>
+            </div>
+            <label class="form-row">
+              <span class="form-label">{{ zhCN.connection.ssh.passphrase }}</span>
+              <input v-model="form.ssh.passphrase" type="password" :disabled="!form.ssh.enabled" />
+            </label>
+          </template>
+        </template>
+      </div>
 
       <div class="test-line" data-testid="test-result">
         <span v-if="testResult" :class="testOk ? 'test-ok' : 'test-fail'">{{ testResult }}</span>
@@ -288,5 +435,59 @@ async function onSave(): Promise<void> {
   background: var(--joyo-primary);
   border-color: var(--joyo-primary);
   color: #fff;
+}
+
+/* ===== SSH 隧道折叠区（spec-06） ===== */
+.ssh-section {
+  border: 1px solid var(--joyo-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ssh-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  user-select: none;
+}
+
+.ssh-caret {
+  color: var(--joyo-text-muted);
+  font-size: 11px;
+}
+
+.ssh-toggle {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: normal;
+  color: var(--joyo-text-muted);
+  cursor: pointer;
+}
+
+.ssh-section input:disabled {
+  opacity: 0.5;
+}
+
+.auth-radios {
+  flex: 1;
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+}
+
+.auth-radios label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
 }
 </style>

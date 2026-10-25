@@ -9,6 +9,38 @@ export interface JoyoLaunchConfig {
   token: string
 }
 
+/** SSH 认证方式（spec-06） */
+export type SshAuthType = 'password' | 'privateKey'
+
+/** SSH 隧道脱敏视图（spec-06：密文不外传，只有 has 标记） */
+export interface SshTunnelView {
+  enabled: boolean
+  host: string
+  port: number
+  username: string
+  authType: SshAuthType
+  privateKeyPath: string
+  hasSshPassword: boolean
+  hasSshPassphrase: boolean
+}
+
+/** SSH 隧道保存入参（明文经 IPC 进 Main 加密落盘） */
+export interface SshTunnelInput {
+  enabled: boolean
+  host: string
+  port: number
+  username: string
+  authType: SshAuthType
+  /** 明文；undefined = 保留原值（编辑留空 = 不修改） */
+  password?: string
+  privateKeyPath?: string
+  /** 明文；undefined = 保留原值 */
+  passphrase?: string
+}
+
+/** secure:decrypt 支持的字段（spec-06 扩展 SSH 两个 secret） */
+export type SecretField = 'password' | 'sshPassword' | 'sshPassphrase'
+
 /** 连接列表项（脱敏视图：无 passwordEnc，有 hasPassword） */
 export interface ConnectionListItem {
   id: string
@@ -17,7 +49,7 @@ export interface ConnectionListItem {
   port: number
   username: string
   defaultDatabase: string
-  sshTunnel: null
+  sshTunnel: SshTunnelView | null
   createdAt: string
   updatedAt: string
   hasPassword: boolean
@@ -32,6 +64,8 @@ export interface SaveConnectionInput {
   username: string
   password?: string
   defaultDatabase?: string
+  /** SSH 隧道（spec-06）；undefined = 保留原值，null = 清空 */
+  sshTunnel?: SshTunnelInput | null
 }
 
 /** 查询历史条目（spec-05）：append 入参（不含 id） */
@@ -66,7 +100,10 @@ declare global {
         list(): Promise<ConnectionListItem[]>
         save(input: SaveConnectionInput): Promise<ConnectionListItem>
         remove(id: string): Promise<boolean>
-        decryptPassword(id: string): Promise<string | null>
+        /** field: 'password'(默认) | 'sshPassword' | 'sshPassphrase'（spec-06） */
+        decryptPassword(id: string, field?: SecretField): Promise<string | null>
+        /** spec-06：私钥文件选择器，返回绝对路径或 null */
+        pickPrivateKey(): Promise<string | null>
       }
       /** 查询历史（spec-05）：Electron Main 持久化，不经后端 */
       history: {

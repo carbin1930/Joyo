@@ -28,7 +28,10 @@ contextBridge.exposeInMainWorld('joyo', {
     list: () => ipcRenderer.invoke('connections:list'),
     save: (input: unknown) => ipcRenderer.invoke('connections:save', input),
     remove: (id: string) => ipcRenderer.invoke('connections:delete', id),
-    decryptPassword: (id: string) => ipcRenderer.invoke('secure:decrypt', id),
+    /** field: 'password'(默认) | 'sshPassword' | 'sshPassphrase'（spec-06） */
+    decryptPassword: (id: string, field?: string) => ipcRenderer.invoke('secure:decrypt', id, field ?? 'password'),
+    /** spec-06：私钥文件选择器，返回绝对路径或 null */
+    pickPrivateKey: () => ipcRenderer.invoke('dialog:pick-private-key'),
   },
   history: {
     append: (entry: unknown) => ipcRenderer.invoke('history:append', entry),

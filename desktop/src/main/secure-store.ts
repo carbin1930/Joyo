@@ -10,6 +10,28 @@ import { randomUUID } from 'node:crypto'
  * 本模块不依赖 electron，便于纯 node 单元测试。
  */
 
+export type SshAuthType = 'password' | 'privateKey'
+
+/** SSH 隧道存储态（spec-06）：两个 secret 均为 enc:v1: 密文 */
+export interface SshTunnelSecret {
+  enabled: boolean
+  host: string
+  port: number
+  username: string
+  authType: SshAuthType
+  /** enc:v1:；空为空字符串 */
+  sshPasswordEnc: string
+  /** enc:v1:；空为空字符串 */
+  sshPassphraseEnc: string
+  privateKeyPath: string
+}
+
+/** 列表视图的 SSH 脱敏形态：密文不外传，只给 has 标记 */
+export type SshTunnelView = Omit<SshTunnelSecret, 'sshPasswordEnc' | 'sshPassphraseEnc'> & {
+  hasSshPassword: boolean
+  hasSshPassphrase: boolean
+}
+
 export interface ConnectionConfig {
   id: string
   name: string
@@ -19,8 +41,8 @@ export interface ConnectionConfig {
   /** enc:v1:<base64>；空密码为空字符串 */
   passwordEnc: string
   defaultDatabase: string
-  /** v0.2 引入（data-model.md 预留） */
-  sshTunnel: null
+  /** v0.2 引入（spec-06）：未启用/未配置为 null */
+  sshTunnel: SshTunnelSecret | null
   createdAt: string
   updatedAt: string
 }
@@ -31,8 +53,23 @@ export interface ConnectionsFile {
 }
 
 /** 列表/返回给渲染进程的脱敏视图：passwordEnc 一律不外传（data-model.md 红线） */
-export type ConnectionListItem = Omit<ConnectionConfig, 'passwordEnc'> & {
+export type ConnectionListItem = Omit<ConnectionConfig, 'passwordEnc' | 'sshTunnel'> & {
   hasPassword: boolean
+  sshTunnel: SshTunnelView | null
+}
+
+/** SSH 隧道保存入参（明文经 IPC 进 Main，加密后落盘；渲染层不落任何明文） */
+export interface SshTunnelInput {
+  enabled: boolean
+  host: string
+  port: number
+  username: string
+  authType: SshAuthType
+  /** 明文；undefined = 保留原值（与 password 同契约） */
+  password?: string
+  privateKeyPath?: string
+  /** 明文；undefined = 保留原值 */
+  passphrase?: string
 }
 
 /** 保存入参（渲染进程 → Main）；id 缺省 = 新建 */
@@ -45,7 +82,12 @@ export interface SaveConnectionInput {
   /** 明文密码，可选；编辑时留空表示不修改原密码 */
   password?: string
   defaultDatabase?: string
+  /** SSH 隧道；undefined = 保留原值，null = 清空 */
+  sshTunnel?: SshTunnelInput | null
 }
+
+/** secure:decrypt 支持的字段（spec-06 扩展 SSH 两个 secret） */
+export type SecretField = 'password' | 'sshPassword' | 'sshPassphrase'
 
 export interface PasswordCipher {
   encrypt(plain: string): string
@@ -57,9 +99,42 @@ export function newConnectionsFile(): ConnectionsFile {
   return { version: 1, connections: [] }
 }
 
+function toSshTunnelView(s: SshTunnelSecret): SshTunnelView {
+  const { sshPasswordEnc, sshPassphraseEnc, ...rest } = s
+  return {
+    ...rest,
+    hasSshPassword: sshPasswordEnc !== '',
+    hasSshPassphrase: sshPassphraseEnc !== '',
+  }
+}
+
 function toListItem(c: ConnectionConfig): ConnectionListItem {
-  const { passwordEnc, ...rest } = c
-  return { ...rest, hasPassword: passwordEnc !== '' }
+  const { passwordEnc, sshTunnel, ...rest } = c
+  return {
+    ...rest,
+    hasPassword: passwordEnc !== '',
+    sshTunnel: sshTunnel === null ? null : toSshTunnelView(sshTunnel),
+  }
+}
+
+/** 明文 → 存储态；undefined secret 保留原值（编辑留空 = 不修改，spec-06 第 2 节） */
+function buildSshTunnelSecret(
+  input: SshTunnelInput,
+  existing: SshTunnelSecret | null,
+  cipher: PasswordCipher,
+): SshTunnelSecret {
+  return {
+    enabled: input.enabled,
+    host: input.host,
+    port: input.port,
+    username: input.username,
+    authType: input.authType,
+    sshPasswordEnc:
+      input.password === undefined ? (existing?.sshPasswordEnc ?? '') : cipher.encrypt(input.password),
+    sshPassphraseEnc:
+      input.passphrase === undefined ? (existing?.sshPassphraseEnc ?? '') : cipher.encrypt(input.passphrase),
+    privateKeyPath: input.privateKeyPath ?? existing?.privateKeyPath ?? '',
+  }
 }
 
 export class ConnectionsStore {
@@ -110,6 +185,10 @@ export class ConnectionsStore {
       if (input.password !== undefined) {
         existing.passwordEnc = this.cipher.encrypt(input.password)
       }
+      if (input.sshTunnel !== undefined) {
+        existing.sshTunnel =
+          input.sshTunnel === null ? null : buildSshTunnelSecret(input.sshTunnel, existing.sshTunnel, this.cipher)
+      }
       existing.updatedAt = now
       this.persist(file)
       return toListItem(existing)
@@ -123,7 +202,10 @@ export class ConnectionsStore {
       username: input.username,
       passwordEnc: this.cipher.encrypt(input.password ?? ''),
       defaultDatabase: input.defaultDatabase ?? '',
-      sshTunnel: null,
+      sshTunnel:
+        input.sshTunnel === undefined || input.sshTunnel === null
+          ? null
+          : buildSshTunnelSecret(input.sshTunnel, null, this.cipher),
       createdAt: now,
       updatedAt: now,
     }
@@ -142,12 +224,19 @@ export class ConnectionsStore {
     return true
   }
 
-  /** IPC: secure:decrypt —— 仅用于编辑表单回填；解密失败返回 null（spec-01 边界情况） */
-  decryptPassword(id: string): string | null {
+  /** IPC: secure:decrypt —— 仅用于编辑表单回填 / 打开会话取明文；解密失败返回 null（spec-01 边界情况） */
+  decryptSecret(id: string, field: SecretField = 'password'): string | null {
     const conn = this.load().connections.find((c) => c.id === id)
     if (!conn) return null
-    if (conn.passwordEnc === '') return ''
-    return this.cipher.decrypt(conn.passwordEnc)
+    if (field === 'password') {
+      if (conn.passwordEnc === '') return ''
+      return this.cipher.decrypt(conn.passwordEnc)
+    }
+    const ssh = conn.sshTunnel
+    if (!ssh) return ''
+    const enc = field === 'sshPassword' ? ssh.sshPasswordEnc : ssh.sshPassphraseEnc
+    if (enc === '') return ''
+    return this.cipher.decrypt(enc)
   }
 
   private persist(file: ConnectionsFile): void {

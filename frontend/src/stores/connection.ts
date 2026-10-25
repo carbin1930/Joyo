@@ -4,7 +4,7 @@ import { closeSession, openSession } from '@/api/connection'
 import { toast } from '@/composables/use-toast'
 import { useSchemaStore } from '@/stores/schema'
 import type { ConnectionListItem, SaveConnectionInput } from '@/types/ipc'
-import type { SessionInfo } from '@/api/connection'
+import type { SessionInfo, SshTunnelPayload } from '@/api/connection'
 import { zhCN } from '@/locales/zh-CN'
 
 /**
@@ -75,6 +75,42 @@ export const useConnectionStore = defineStore('connection', {
         return false
       }
 
+      // spec-06：启用 SSH 隧道时解密对应 secret（明文仅经回环传给后端）
+      let sshTunnel: SshTunnelPayload | undefined
+      const ssh = conn.sshTunnel
+      if (ssh?.enabled) {
+        if (ssh.authType === 'password') {
+          const sshPassword = await connectionsIpc.decryptPassword(id, 'sshPassword')
+          if (sshPassword === null) {
+            toast('error', zhCN.connection.passwordInvalid)
+            return false
+          }
+          sshTunnel = {
+            enabled: true,
+            host: ssh.host,
+            port: ssh.port,
+            username: ssh.username,
+            authType: 'password',
+            password: sshPassword,
+          }
+        } else {
+          const passphrase = await connectionsIpc.decryptPassword(id, 'sshPassphrase')
+          if (passphrase === null) {
+            toast('error', zhCN.connection.passwordInvalid)
+            return false
+          }
+          sshTunnel = {
+            enabled: true,
+            host: ssh.host,
+            port: ssh.port,
+            username: ssh.username,
+            authType: 'privateKey',
+            privateKeyPath: ssh.privateKeyPath,
+            passphrase: passphrase ?? '',
+          }
+        }
+      }
+
       try {
         const session = await openSession(id, {
           host: conn.host,
@@ -82,6 +118,7 @@ export const useConnectionStore = defineStore('connection', {
           username: conn.username,
           password,
           defaultDatabase: conn.defaultDatabase,
+          sshTunnel,
         })
         this.sessions[id] = session
         this.connectedIds.push(id)

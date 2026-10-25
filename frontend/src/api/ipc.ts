@@ -1,4 +1,4 @@
-import type { ConnectionListItem, SaveConnectionInput } from '@/types/ipc'
+import type { ConnectionListItem, SaveConnectionInput, SecretField } from '@/types/ipc'
 
 /**
  * 连接配置 IPC 封装（coding-frontend.md 第 4 节：store 之外的 api 层统一出口）。
@@ -21,8 +21,12 @@ export const connectionsIpc = {
   remove(id: string): Promise<boolean> {
     return requireIpc().connections.remove(id)
   },
-  /** 编辑表单回填用；null = 连接不存在或解密失败 */
-  decryptPassword(id: string): Promise<string | null> {
-    return requireIpc().connections.decryptPassword(id)
+  /** 编辑表单回填 / 打开会话取明文用；null = 连接不存在或解密失败 */
+  decryptPassword(id: string, field: SecretField = 'password'): Promise<string | null> {
+    return requireIpc().connections.decryptPassword(id, field)
+  },
+  /** spec-06：私钥文件选择器，返回绝对路径或 null */
+  pickPrivateKey(): Promise<string | null> {
+    return requireIpc().connections.pickPrivateKey()
   },
 }

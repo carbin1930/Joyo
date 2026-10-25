@@ -67,7 +67,7 @@ describe('ConnectionsStore', () => {
     const created = store.save({ ...sample })
 
     store.save({ id: created.id, name: '改名', host: '10.0.0.1', port: 3307, username: 'admin' })
-    expect(store.decryptPassword(created.id)).toBe('secret-123')
+    expect(store.decryptSecret(created.id, 'password')).toBe('secret-123')
 
     store.save({
       id: created.id,
@@ -77,7 +77,7 @@ describe('ConnectionsStore', () => {
       username: 'admin',
       password: 'new-pass',
     })
-    expect(store.decryptPassword(created.id)).toBe('new-pass')
+    expect(store.decryptSecret(created.id, 'password')).toBe('new-pass')
   })
 
   it('更新真实更新 updatedAt 且保持 createdAt', () => {
@@ -131,8 +131,99 @@ describe('ConnectionsStore', () => {
     raw.connections[0].passwordEnc = 'enc:v1:不兼容的密文'
     fs.writeFileSync(filePath, JSON.stringify(raw), 'utf-8')
 
-    expect(newStore().decryptPassword(created.id)).toBeNull()
-    expect(newStore().decryptPassword('not-exist')).toBeNull()
+    expect(newStore().decryptSecret(created.id, 'password')).toBeNull()
+    expect(newStore().decryptSecret('not-exist', 'password')).toBeNull()
+  })
+
+  it('SSH 隧道：保存后密文落盘、列表脱敏、secret 可解密回填（spec-06）', () => {
+    const store = newStore()
+    const created = store.save({
+      ...sample,
+      sshTunnel: {
+        enabled: true,
+        host: 'jump',
+        port: 22,
+        username: 'ubuntu',
+        authType: 'password',
+        password: 'ssh-pass',
+      },
+    })
+
+    expect(created.sshTunnel).toMatchObject({
+      enabled: true,
+      host: 'jump',
+      authType: 'password',
+      hasSshPassword: true,
+      hasSshPassphrase: false,
+    })
+    expect('sshPasswordEnc' in (created.sshTunnel ?? {})).toBe(false)
+
+    const raw = fs.readFileSync(connectionsFilePath(tmpDir), 'utf-8')
+    expect(raw).toContain('enc:test:')
+    expect(raw).not.toContain('ssh-pass')
+
+    expect(store.decryptSecret(created.id, 'sshPassword')).toBe('ssh-pass')
+    expect(store.decryptSecret(created.id, 'sshPassphrase')).toBe('')
+  })
+
+  it('SSH 隧道：编辑不传 password 保留原密文，null 清空（spec-06）', () => {
+    const store = newStore()
+    const created = store.save({
+      ...sample,
+      sshTunnel: {
+        enabled: true,
+        host: 'jump',
+        port: 22,
+        username: 'ubuntu',
+        authType: 'password',
+        password: 'ssh-pass',
+      },
+    })
+
+    // 改配置不动 secret（编辑留空 = 不修改）
+    store.save({
+      id: created.id,
+      name: sample.name,
+      host: sample.host,
+      port: sample.port,
+      username: sample.username,
+      sshTunnel: { enabled: true, host: 'jump2', port: 2222, username: 'ubuntu', authType: 'password' },
+    })
+    expect(store.decryptSecret(created.id, 'sshPassword')).toBe('ssh-pass')
+
+    // 切到私钥认证：password undefined 保留，passphrase 明文更新
+    store.save({
+      id: created.id,
+      name: sample.name,
+      host: sample.host,
+      port: sample.port,
+      username: sample.username,
+      sshTunnel: {
+        enabled: true,
+        host: 'jump',
+        port: 22,
+        username: 'ubuntu',
+        authType: 'privateKey',
+        privateKeyPath: 'C:/keys/id_ed25519',
+        passphrase: 'key-pass',
+      },
+    })
+    const item = store.list().find((c) => c.id === created.id)
+    expect(item?.sshTunnel).toMatchObject({ authType: 'privateKey', privateKeyPath: 'C:/keys/id_ed25519' })
+    expect(item?.sshTunnel?.hasSshPassword).toBe(true)
+    expect(store.decryptSecret(created.id, 'sshPassphrase')).toBe('key-pass')
+
+    // null 清空
+    store.save({
+      id: created.id,
+      name: sample.name,
+      host: sample.host,
+      port: sample.port,
+      username: sample.username,
+      sshTunnel: null,
+    })
+    expect(store.list().find((c) => c.id === created.id)?.sshTunnel).toBeNull()
+    expect(store.decryptSecret(created.id, 'sshPassword')).toBe('')
   })
 
   it('原子写：无 .tmp 残留', () => {

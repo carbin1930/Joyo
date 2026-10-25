@@ -41,7 +41,7 @@ class ConnectionIT {
             .withUsername("root")
             .withPassword("root-pass");
 
-    private final ConnectionService service = new ConnectionService();
+    private final ConnectionService service = new ConnectionService(new SshTunnelManager());
 
     private ConnectionTestRequest request(String password) {
         return new ConnectionTestRequest(

@@ -50,7 +50,7 @@ class MetadataIT {
             .withPassword("root-pass")
             .withInitScript("meta-init.sql");
 
-    private final ConnectionService connectionService = new ConnectionService();
+    private final ConnectionService connectionService = new ConnectionService(new SshTunnelManager());
     private final MetadataService metadataService = new MetadataService(connectionService);
 
     private static ConnectionTestRequest request() {

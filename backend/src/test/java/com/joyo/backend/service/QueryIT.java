@@ -45,7 +45,7 @@ class QueryIT {
             .withUsername("root")
             .withPassword("root-pass");
 
-    private final ConnectionService connectionService = new ConnectionService();
+    private final ConnectionService connectionService = new ConnectionService(new SshTunnelManager());
     private final QueryResultCache cache = new QueryResultCache();
     private final QueryService queryService = new QueryService(connectionService, cache);
 

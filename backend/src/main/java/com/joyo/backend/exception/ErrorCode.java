@@ -24,6 +24,8 @@ public enum ErrorCode {
     CONNECT_TIMEOUT(2003, "连接超时"),
     /** 连接会话已失效 */
     SESSION_INVALID(2004, "连接已断开，请重新连接"),
+    /** SSH 隧道建立失败（spec-06），message 区分网络/认证/私钥原因 */
+    SSH_TUNNEL_FAILED(2005, "SSH 隧道连接失败"),
     /** 元数据读取失败（含权限不足），rest-api.md 2101 */
     METADATA_FAILED(2101, "元数据读取失败"),
 

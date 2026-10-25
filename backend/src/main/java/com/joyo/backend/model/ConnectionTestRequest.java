@@ -18,7 +18,19 @@ public record ConnectionTestRequest(
         String password,
         String defaultDatabase,
         /** 缺省 PREFERRED；透传给 JDBC sslMode */
-        String sslMode) {
+        String sslMode,
+        /** 启用时先经跳板机建 SSH 隧道，再由本地端口转发连数据库（spec-06） */
+        SshTunnelRequest sshTunnel) {
+
+    public boolean sshEnabled() {
+        return sshTunnel != null && sshTunnel.isEnabled();
+    }
+
+    /** 兼容 v0.1 的 6 参构造（不带 SSH 隧道） */
+    public ConnectionTestRequest(String host, Integer port, String username, String password,
+            String defaultDatabase, String sslMode) {
+        this(host, port, username, password, defaultDatabase, sslMode, null);
+    }
 
     public String sslModeOrDefault() {
         return sslMode == null || sslMode.isBlank() ? "PREFERRED" : sslMode;

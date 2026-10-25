@@ -33,9 +33,20 @@
 {
   "host": "127.0.0.1", "port": 3306,
   "username": "root", "password": "plain-or-decrypted",
-  "defaultDatabase": "", "sslMode": "PREFERRED"
+  "defaultDatabase": "", "sslMode": "PREFERRED",
+  "sshTunnel": null
 }
 ```
+
+`sshTunnel`（spec-06，可选）：启用 SSH 隧道时传
+```json
+{
+  "enabled": true, "host": "jump", "port": 22, "username": "ubuntu",
+  "authType": "password", "password": "plain",
+  "privateKeyPath": "", "passphrase": ""
+}
+```
+`authType` 为 `password` / `privateKey`；password/passphrase 为解密后明文，仅经 localhost 回环传输，后端不落盘。隧道由后端建立（JSch），失败返回 2005。
 
 成功响应 data：
 ```json
@@ -48,30 +59,41 @@
 
 | 通道 | 方向 | 说明 |
 |---|---|---|
-| `connections:list` | R→M→R | 返回连接列表（passwordEnc 脱敏为 `hasPassword: boolean`） |
-| `connections:save` | R→M→R | 新建/更新；`password` 明文可选字段，Main 负责加密 |
+| `connections:list` | R→M→R | 返回连接列表（passwordEnc 脱敏为 `hasPassword`；sshTunnel 密文脱敏为 `hasSshPassword`/`hasSshPassphrase`） |
+| `connections:save` | R→M→R | 新建/更新；`password`/`sshTunnel.password`/`sshTunnel.passphrase` 明文可选字段，Main 负责加密 |
 | `connections:delete` | R→M→R | 按 id 删除 |
-| `secure:decrypt` | R→M→R | 解密密码，仅用于编辑表单回填 |
+| `secure:decrypt` | R→M→R | 解密 secret；入参 `{ id, field: 'password' \| 'sshPassword' \| 'sshPassphrase' }`（spec-06 扩展），返回 `string \| null` |
+| `dialog:pick-private-key` | R→M→R | spec-06：原生文件选择器取私钥路径，返回 `string \| null` |
 
 载荷契约（类型定义对应 `desktop/src/main/secure-store.ts`，前端镜像到 `frontend/src/types/ipc.d.ts`）：
 
 ```ts
-// 列表项（所有通道的返回视图均不含 passwordEnc）
+// 列表项（所有通道的返回视图均不含 passwordEnc / sshPasswordEnc / sshPassphraseEnc）
 interface ConnectionListItem {
   id: string; name: string; host: string; port: number; username: string
-  defaultDatabase: string; sshTunnel: null
+  defaultDatabase: string
+  sshTunnel: {
+    enabled: boolean; host: string; port: number; username: string
+    authType: 'password' | 'privateKey'; privateKeyPath: string
+    hasSshPassword: boolean; hasSshPassphrase: boolean
+  } | null
   createdAt: string; updatedAt: string   // ISO-8601 UTC
   hasPassword: boolean
 }
 
-// connections:save 入参（id 缺省 = 新建；password 留空 = 编辑时不修改原密码）
+// connections:save 入参（id 缺省 = 新建；password 留空 = 编辑时不修改原密码；
+// sshTunnel 缺省 = 保留原值，null = 清空）
 interface SaveConnectionInput {
   id?: string; name: string; host: string; port: number
   username: string; password?: string; defaultDatabase?: string
+  sshTunnel?: {
+    enabled: boolean; host: string; port: number; username: string
+    authType: 'password' | 'privateKey'
+    password?: string; privateKeyPath?: string; passphrase?: string
+  } | null
 }
 
 // connections:delete 入参 id: string，返回 boolean（是否删除）
-// secure:decrypt 入参 id: string，返回 string | null（null = 连接不存在或解密失败）
 ```
 
 约定：更新不存在的 id → handler 抛错（渲染层收到 rejected promise，message 为中文文案）。
