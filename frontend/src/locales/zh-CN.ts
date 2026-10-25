@@ -96,6 +96,17 @@ export const zhCN = {
       copyFailed: '复制失败，请手动选择复制',
     },
   },
+  history: {
+    title: '查询历史',
+    open: '历史',
+    searchPlaceholder: '搜索 SQL…',
+    empty: '暂无历史',
+    emptySearch: '无匹配历史',
+    clear: '清空历史',
+    clearConfirm: '确定清空全部查询历史？',
+    deleteOne: '删除该条',
+    rowCount: (n: number) => `${n} 行`,
+  },
   connection: {
     new: '新建连接',
     empty: '暂无连接，点击上方按钮新建',

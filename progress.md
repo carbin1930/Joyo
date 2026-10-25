@@ -9,8 +9,8 @@
 - 已完成并合入 main：spec-01 连接管理、spec-02 库表浏览、spec-03 SQL 编辑器（含多 SQL 页签/F13 精简日志/Element Plus 第一批替换，提交 `1f68538`）
 - 当前分支：`main`（与 origin/main 同步，工作区干净）
 - 实机验收：spec-03 增强改动已通过（多 SQL 页签正常；"内部错误 1500" 未再复现）
-- **v0.1 已收官**：tag `v0.1.0` 已打（2026-10-25；代理未开 push 暂未完成，开代理后 `git push origin v0.1.0`）
-- **v0.2 进行中**：spec-05/06/13/14 四份 spec 已写完（草稿），待用户确认后按 spec-05 → 06 → 13 → 14 顺序实现
+- **v0.2 进行中**：spec-05 查询历史已实现（待实机验收）；下一个 spec-06 SSH 隧道
+- 待办：`QueryEditorView.vue` 已 529 行超出组件规范（300 行），下个 spec 间隙拆分（SQL 页签条 / 工具行 / 分割区各自成组件）
 - F08 表数据编辑范围已确认（增删改 + 编辑锁 + 保存确认），按 roadmap 排在 v0.4，未提前实现
 
 ## 已完成（按时间）
@@ -29,6 +29,7 @@
   - 双击表插入：SQLyog 风格别名（下划线分段取首字母），当前库纯表名、跨库带库名限定
   -  风格库操作：双击库节点切库、当前库树中高亮
   - 中文应用菜单 + 单实例锁（防双实例抢缓存）+ 后端文件日志（logging.file.name + 菜单"打开后端日志"）
+- [x] 2026-10-25 【spec-05 查询历史】实现完成：`history-store.ts`（JSON + 原子写/去重/1000 上限/损坏兜底，10 单测）+ IPC 四通道 + preload + 类型镜像；`execute` 成败均记录（失败 kind=ERROR）；`HistoryPanel.vue` 浮层（搜索防抖/双击回填/单项删除/清空二次确认）；设计变更：better-sqlite3 → JSON（避免 native 依赖），spec 已回写定稿
 - [x] 2026-10-25 【v0.1 收官】实机验收通过，打 tag `v0.1.0`；v0.2 四份 spec（05 查询历史 / 06 SSH 隧道 / 13 日志查看 / 14 资源监控）定稿，rest-api.md 同步（history 改走 Main IPC、错误码 2005、/logs 与 /health 扩展契约）
 - [x] 2026-10-22 【spec-04 任务 3】编辑器/结果区上下拖拽分割（`splitter`，编辑器 30%~75%，拖拽时全局锁定光标）+ 状态条抽为 `ResultStatusBar.vue`（截断至 N 行/隐藏列提示/“排序仅本页”/页码/每页 50·100·200·500）；query store 增加 `loadPage`/`changePageSize`（改页大小回第 1 页）+ 单测
 - [x] 2026-10-22 【spec-04 任务 2】结果网格复制：`Ctrl+C` 选区/整行 → TSV（`toTsv`）；右键菜单（`ResultContextMenu`）复制为 CSV（带表头、RFC4180 转义）/TSV，无选区时复制当前页整页；双击单元格进入编辑态仅用于复制（提交后 `cellEdited` 还原原值，不写库）；复制结果 toast 提示

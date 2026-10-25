@@ -379,7 +379,11 @@ watch(
   },
 )
 
-defineExpose({ requestRun })
+defineExpose({
+  requestRun,
+  /** 聚焦编辑器（spec-05 历史回填后调用） */
+  focus: () => editor?.focus(),
+})
 </script>
 
 <template>

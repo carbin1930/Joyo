@@ -1,6 +1,8 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
 import path from 'node:path'
 import { registerConnectionsIpc } from './connections-ipc'
+import { HistoryStore, historyFilePath } from './history-store'
+import { registerHistoryIpc } from './history-ipc'
 import { SafeStorageCipher } from './safe-storage-cipher'
 import { ConnectionsStore, connectionsFilePath } from './secure-store'
 import { resolveBackend, type ResolvedBackend } from './sidecar'
@@ -127,6 +129,9 @@ app.whenReady().then(async () => {
       new SafeStorageCipher(),
     )
     registerConnectionsIpc(connectionsStore)
+
+    // 查询历史持久化（spec-05）：userData/history.json，不经后端
+    registerHistoryIpc(new HistoryStore(historyFilePath(app.getPath('userData'))))
 
     createWindow()
   } catch (e) {

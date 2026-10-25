@@ -34,6 +34,26 @@ export interface SaveConnectionInput {
   defaultDatabase?: string
 }
 
+/** 查询历史条目（spec-05）：append 入参（不含 id） */
+export interface HistoryEntryInput {
+  sql: string
+  connectionName: string
+  database: string
+  /** SELECT/UPDATE/.../MULTI；失败条目为 ERROR */
+  kind: string
+  elapsedMs: number
+  rowCount: number | null
+  success: boolean
+  errorMessage: string | null
+  /** ISO-8601 UTC */
+  executedAt: string
+}
+
+/** 查询历史条目（history:list 返回） */
+export interface HistoryItem extends HistoryEntryInput {
+  id: number
+}
+
 declare global {
   interface Window {
     joyo?: {
@@ -45,6 +65,13 @@ declare global {
         save(input: SaveConnectionInput): Promise<ConnectionListItem>
         remove(id: string): Promise<boolean>
         decryptPassword(id: string): Promise<string | null>
+      }
+      /** 查询历史（spec-05）：Electron Main 持久化，不经后端 */
+      history: {
+        append(entry: HistoryEntryInput): Promise<void>
+        list(query?: { keyword?: string; limit?: number }): Promise<HistoryItem[]>
+        remove(id: number): Promise<boolean>
+        clear(): Promise<void>
       }
     }
   }

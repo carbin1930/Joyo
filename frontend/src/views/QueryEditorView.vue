@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import MonacoEditor from '@/components/query/MonacoEditor.vue'
+import HistoryPanel from '@/components/query/HistoryPanel.vue'
 import ResultPanel from '@/components/query/ResultPanel.vue'
 import TableDetail from '@/components/schema/TableDetail.vue'
 import LogPanel from '@/components/log/LogPanel.vue'
@@ -20,6 +21,16 @@ const queryStore = useQueryStore()
 const schemaStore = useSchemaStore()
 
 const editorRef = ref<InstanceType<typeof MonacoEditor> | null>(null)
+/** 查询历史面板开关（spec-05） */
+const historyOpen = ref(false)
+
+/** 历史回填：替换编辑器全部内容、关闭面板、焦点回编辑器 */
+function onFillHistory(sql: string): void {
+  if (!activeTab.value) return
+  queryStore.setDraft(activeTab.value.id, sql)
+  historyOpen.value = false
+  editorRef.value?.focus()
+}
 
 // ===== 编辑器 / 结果区上下拖拽分割（spec-04 第 5 节）=====
 
@@ -199,6 +210,14 @@ function closeTab(e: MouseEvent, id: string): void {
         >
           {{ queryStore.executing ? zhCN.query.running : zhCN.query.run }}
         </el-button>
+        <el-button
+          data-testid="history-btn"
+          :type="historyOpen ? 'primary' : 'default'"
+          plain
+          @click="historyOpen = !historyOpen"
+        >
+          {{ zhCN.history.open }}
+        </el-button>
         <span class="toolbar-hint">Ctrl+Enter</span>
         <span class="spacer" />
         <label class="max-rows">
@@ -217,6 +236,11 @@ function closeTab(e: MouseEvent, id: string): void {
             ref="editorRef"
             v-model="draft"
             @run="onRun"
+          />
+          <HistoryPanel
+            v-if="historyOpen"
+            @close="historyOpen = false"
+            @fill="onFillHistory"
           />
         </div>
 
@@ -416,6 +440,7 @@ function closeTab(e: MouseEvent, id: string): void {
 }
 
 .editor-area {
+  position: relative;
   flex: none;
   min-height: 0;
   padding-top: 8px;

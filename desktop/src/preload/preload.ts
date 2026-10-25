@@ -24,4 +24,10 @@ contextBridge.exposeInMainWorld('joyo', {
     remove: (id: string) => ipcRenderer.invoke('connections:delete', id),
     decryptPassword: (id: string) => ipcRenderer.invoke('secure:decrypt', id),
   },
+  history: {
+    append: (entry: unknown) => ipcRenderer.invoke('history:append', entry),
+    list: (query?: unknown) => ipcRenderer.invoke('history:list', query),
+    remove: (id: number) => ipcRenderer.invoke('history:delete', id),
+    clear: () => ipcRenderer.invoke('history:clear'),
+  },
 })

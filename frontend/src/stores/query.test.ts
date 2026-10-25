@@ -26,6 +26,30 @@ function selectResult(ordinal: number, total: number) {
   }
 }
 
+/** stub window.joyo.history，捕获历史记录（spec-05 测试辅助；node 环境挂在 globalThis） */
+function stubHistoryCapture(appended: Array<Record<string, unknown>>): void {
+  const g = globalThis as unknown as { window?: Record<string, unknown> }
+  g.window = g.window ?? {}
+  g.window.joyo = {
+    history: {
+      append: (entry: Record<string, unknown>) => {
+        appended.push(entry)
+        return Promise.resolve()
+      },
+    },
+  }
+}
+
+function clearHistoryStub(): void {
+  const g = globalThis as unknown as { window?: { joyo?: unknown } }
+  if (g.window) delete g.window.joyo
+}
+
+/** flush fire-and-forget 的历史记录微任务 */
+async function flushAsync(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 describe('query store（多 SQL 页签）', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -169,5 +193,58 @@ describe('query store（多 SQL 页签）', () => {
     expect(apiMock.getQueryRows).toHaveBeenCalledWith('q-1', 1, 200)
     expect(resultTab.statement?.pageSize).toBe(200)
     expect(resultTab.statement?.rows).toEqual([['1'], ['2']])
+  })
+
+  it('execute：成功后记录查询历史（spec-05）', async () => {
+    const appended: Array<Record<string, unknown>> = []
+    stubHistoryCapture(appended)
+    try {
+      const store = useQueryStore()
+      const tab = store.ensureTabFor('conn-1', 'joyo')
+      apiMock.executeQuery.mockResolvedValue({
+        statements: [selectResult(1, 3)],
+        elapsedMs: 7,
+      })
+
+      await store.execute(tab.id, 'SELECT id FROM user')
+      await flushAsync()
+
+      expect(appended).toHaveLength(1)
+      expect(appended[0]).toMatchObject({
+        sql: 'SELECT id FROM user',
+        database: 'joyo',
+        kind: 'SELECT',
+        elapsedMs: 7,
+        rowCount: 3,
+        success: true,
+        errorMessage: null,
+      })
+      expect(String(appended[0].executedAt)).toBeTruthy()
+    } finally {
+      clearHistoryStub()
+    }
+  })
+
+  it('execute：失败也记录历史且标 ERROR（spec-05）', async () => {
+    const appended: Array<Record<string, unknown>> = []
+    stubHistoryCapture(appended)
+    try {
+      const store = useQueryStore()
+      const tab = store.ensureTabFor('conn-1', '')
+      apiMock.executeQuery.mockRejectedValue(new Error('Unknown column'))
+
+      await store.execute(tab.id, 'SELECT bad')
+      await flushAsync()
+
+      expect(appended).toHaveLength(1)
+      expect(appended[0]).toMatchObject({
+        sql: 'SELECT bad',
+        kind: 'ERROR',
+        success: false,
+        errorMessage: 'Unknown column',
+      })
+    } finally {
+      clearHistoryStub()
+    }
   })
 })

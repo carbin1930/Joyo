@@ -3,7 +3,7 @@
 - 规格编号：spec-05
 - 功能名称：查询历史（F05）
 - 所属版本：v0.2
-- 状态：草稿（待确认）
+- 状态：已定稿（2026-10-25 确认；存储实现由 SQLite 调整为 JSON，见第 3 节实现说明）
 - 依赖 spec：spec-03（SQL 编辑器）
 
 ## 1. 功能描述
@@ -42,21 +42,11 @@ interface HistoryEntry {
 interface HistoryItem extends HistoryEntry { id: number }
 ```
 
-存储：`%APPDATA%/joyo/history.db`（better-sqlite3，Main 进程），表结构：
-
-```sql
-CREATE TABLE IF NOT EXISTS history (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  sql TEXT NOT NULL, connection_name TEXT, database TEXT, kind TEXT,
-  elapsed_ms INTEGER, row_count INTEGER,
-  success INTEGER NOT NULL, error_message TEXT,
-  executed_at TEXT NOT NULL
-);
-```
+存储（实现说明）：原设计 better-sqlite3，实现时调整为 **`%APPDATA%/joyo/history.json`（JSON + 临时文件原子重命名，与 connections.json 同模式）**——避免为 1000 条上限的追加型数据引入 native 模块与 electron-rebuild 链路，desktop 保持零 runtime 依赖。文件结构 `{ version: 1, nextId, items: HistoryItem[] }`；损坏文件重命名 `.broken.*` 保留现场后重建（与 connections.json 同规则）。唯一实现模块 `desktop/src/main/history-store.ts`。
 
 ## 4. 行为细节
 
-1. **记录时机**：query store `execute()` 结束后（成功与失败都记）调用 `history:append`；多语句记整段原始 SQL 一次，`kind='MULTI'`、`rowCount=null`；单语句记实际 kind / elapsedMs（总耗时）/ rowCount（SELECT 取 totalRows，其余 null）。
+1. **记录时机**：query store `execute()` 结束后（成功与失败都记）调用 `history:append`；多语句记整段原始 SQL 一次，`kind='MULTI'`、`rowCount=null`；单语句记实际 kind / elapsedMs（总耗时）/ rowCount（SELECT 取 totalRows，其余 null）；**失败条目 `kind='ERROR'`、`elapsedMs=0`**（错误信息入 errorMessage）。
 2. **去重**：append 前按 `sql` 逐字节精确匹配查重，命中则**原位更新**该行 executed_at 与结果字段，不新增行（相同 SQL 永远只有一条）。
 3. **上限**：append 后若总行数 > 1000，按 id 升序删除最旧直至 1000。
 4. **搜索**：`sql LIKE '%keyword%'`，大小写不敏感（SQLite `LIKE` 默认对 ASCII 不敏感，足够 v0.2）。

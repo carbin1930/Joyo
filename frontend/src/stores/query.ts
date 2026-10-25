@@ -2,7 +2,9 @@
 import { executeQuery, getQueryRows } from '@/api/query'
 import { toast } from '@/composables/use-toast'
 import type { StatementResult } from '@/types/api'
+import type { HistoryEntryInput } from '@/types/ipc'
 import { zhCN } from '@/locales/zh-CN'
+import { useConnectionStore } from '@/stores/connection'
 
 /** 结果面板的一个 Tab（每条语句一个；错误整体一个 Tab） */
 export interface ResultTab {
@@ -42,6 +44,26 @@ function toTab(s: StatementResult, total: number): ResultTab {
       ? zhCN.query.resultTab(s.ordinal, total)
       : `${zhCN.query.messageTab(s.ordinal, total)} - ${s.kind}`
   return { id: nextResultId(), ordinal: s.ordinal, kind: s.kind, title, statement: s }
+}
+
+/** spec-05：执行结束后记录查询历史（成功与失败都记；失败静默不影响查询） */
+async function appendHistory(entry: Omit<HistoryEntryInput, 'executedAt'>): Promise<void> {
+  try {
+    // node 单测环境无 window，用 globalThis 属性访问避免未声明引用错误
+    await globalThis.window?.joyo?.history?.append({
+      ...entry,
+      executedAt: new Date().toISOString(),
+    })
+  } catch (e) {
+    console.warn('[query] 记录查询历史失败', e)
+  }
+}
+
+/** 单条 SELECT 记 totalRows，其余（多语句/DML/失败）不记行数 */
+function historyRowCount(stmts: StatementResult[]): number | null {
+  if (stmts.length !== 1) return null
+  const s = stmts[0]
+  return s.kind === 'SELECT' ? (s.totalRows ?? s.rows?.length ?? null) : null
 }
 
 /**
@@ -181,6 +203,8 @@ export const useQueryStore = defineStore('query', {
         return
       }
       this.executing = true
+      const connectionName =
+        useConnectionStore().items.find((c) => c.id === tab.connectionId)?.name ?? ''
       try {
         const resp = await executeQuery(tab.connectionId, {
           sql,
@@ -191,19 +215,39 @@ export const useQueryStore = defineStore('query', {
         const first = this.resultsByTab[tabId][0]
         this.activeResultByTab[tabId] = first ? first.id : null
         this.resultsRev += 1
+        void appendHistory({
+          sql,
+          connectionName,
+          database: tab.db,
+          kind: resp.statements.length > 1 ? 'MULTI' : resp.statements[0].kind,
+          elapsedMs: resp.elapsedMs,
+          rowCount: historyRowCount(resp.statements),
+          success: true,
+          errorMessage: null,
+        })
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e)
-        const tab: ResultTab = {
+        const errorTab: ResultTab = {
           id: nextResultId(),
           ordinal: 1,
           kind: 'ERROR',
           title: zhCN.query.errorTab,
           errorMessage: message,
         }
-        this.resultsByTab[tabId] = [tab]
-        this.activeResultByTab[tabId] = tab.id
+        this.resultsByTab[tabId] = [errorTab]
+        this.activeResultByTab[tabId] = errorTab.id
         this.resultsRev += 1
         toast('error', message)
+        void appendHistory({
+          sql,
+          connectionName,
+          database: tab.db,
+          kind: 'ERROR',
+          elapsedMs: 0,
+          rowCount: null,
+          success: false,
+          errorMessage: message,
+        })
       } finally {
         this.executing = false
       }
