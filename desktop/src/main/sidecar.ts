@@ -121,7 +121,15 @@ export async function startSidecar(options: StartSidecarOptions): Promise<Resolv
   const log = options.onLog ?? ((line: string) => console.log(`[backend] ${line}`))
   const child = spawn(
     javaPath,
-    ['-jar', options.jarPath, `--server.port=${port}`, `--joyo.token=${token}`],
+    [
+      '-jar',
+      options.jarPath,
+      // Sidecar 堆上限 1GB：不设 -Xmx 时 JVM 默认取物理内存 1/4，桌面场景不合理
+      // （spec-14 状态栏 heapMax 显示收敛）
+      '-Xmx1g',
+      `--server.port=${port}`,
+      `--joyo.token=${token}`,
+    ],
     {
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
