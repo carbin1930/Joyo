@@ -279,37 +279,37 @@ function closeTab(e: MouseEvent, id: string): void {
         </div>
 
         <div class="result-area">
-        <div class="bottom-tabs">
-          <button
-            class="bottom-tab"
-            :class="{ active: bottomTab === 'result' }"
-            data-testid="bottom-tab-result"
-            @click="bottomTab = 'result'"
-          >
-            {{ zhCN.query.bottomResult }}
-          </button>
-          <button
-            v-if="selectedTable"
-            class="bottom-tab"
-            :class="{ active: bottomTab === 'schema' }"
-            data-testid="bottom-tab-schema"
-            @click="bottomTab = 'schema'"
-          >
-            {{ zhCN.query.bottomSchema(selectedTable.schema, selectedTable.table) }}
-          </button>
-        </div>
-        <div class="bottom-content">
-          <TableDetail v-if="bottomTab === 'schema' && selectedTable" />
-          <ResultPanel
-            v-else
-            :tabs="activeResultTabs"
-            :active-tab-id="activeResultId"
-            :executing="queryStore.executing"
-            @select="queryStore.activeResultByTab[activeTab.id] = $event"
-            @page="(tab, page) => queryStore.changePage(tab, page)"
-            @page-size="(tab, size) => queryStore.changePageSize(tab, size)"
-          />
-        </div>
+          <div class="bottom-tabs">
+            <button
+              class="bottom-tab"
+              :class="{ active: bottomTab === 'result' }"
+              data-testid="bottom-tab-result"
+              @click="bottomTab = 'result'"
+            >
+              {{ zhCN.query.bottomResult }}
+            </button>
+            <button
+              v-if="selectedTable"
+              class="bottom-tab"
+              :class="{ active: bottomTab === 'schema' }"
+              data-testid="bottom-tab-schema"
+              @click="bottomTab = 'schema'"
+            >
+              {{ zhCN.query.bottomSchema(selectedTable.schema, selectedTable.table) }}
+            </button>
+          </div>
+          <div class="bottom-content">
+            <TableDetail v-if="bottomTab === 'schema' && selectedTable" />
+            <ResultPanel
+              v-else
+              :tabs="activeResultTabs"
+              :active-tab-id="activeResultId"
+              :executing="queryStore.executing"
+              @select="queryStore.activeResultByTab[activeTab.id] = $event"
+              @page="(tab, page) => queryStore.changePage(tab, page)"
+              @page-size="(tab, size) => queryStore.changePageSize(tab, size)"
+            />
+          </div>
         </div>
       </div>
     </template>

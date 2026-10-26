@@ -124,7 +124,7 @@ function isSelected(schema: string, table: string): boolean {
       class="filter-input"
       type="text"
       :placeholder="zhCN.schema.filterPlaceholder"
-    />
+    >
 
     <div v-if="!activeId" class="tree-empty">{{ zhCN.schema.noConnection }}</div>
     <div v-else-if="tree?.schemasLoading" class="tree-empty">{{ zhCN.schema.loading }}</div>

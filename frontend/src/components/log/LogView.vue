@@ -130,7 +130,7 @@ onUnmounted(stopTimer)
       <span class="log-path" :title="filePath">{{ filePath || '—' }}</span>
       <span class="spacer" />
       <label class="log-auto">
-        <input v-model="autoRefresh" type="checkbox" data-testid="log-auto-refresh" />
+        <input v-model="autoRefresh" type="checkbox" data-testid="log-auto-refresh">
         {{ zhCN.log.autoRefresh }}
       </label>
       <span v-if="loading" class="log-loading">{{ zhCN.log.loading }}</span>

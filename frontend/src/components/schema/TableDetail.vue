@@ -93,7 +93,7 @@ function columnTypeText(col: TableColumn): string {
     <div v-else-if="!detail" class="detail-empty">{{ zhCN.schema.detail.loadFailed }}</div>
 
     <template v-else>
-    <ExportDialog :open="exportOpen" :source="exportSource" @close="exportOpen = false" />
+      <ExportDialog :open="exportOpen" :source="exportSource" @close="exportOpen = false" />
       <div class="tabs">
         <button
           class="tab"

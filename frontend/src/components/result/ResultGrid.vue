@@ -54,7 +54,14 @@ const props = withDefaults(
     /** spec-16：本地改动（按全局行号索引，新增行为负数） */
     changes?: Record<number, RowChange>
   }>(),
-  { page: 1, pageSize: 100, maxColumns: MAX_RENDERED_COLUMNS, editable: null, unlocked: false },
+  {
+    page: 1,
+    pageSize: 100,
+    maxColumns: MAX_RENDERED_COLUMNS,
+    editable: null,
+    unlocked: false,
+    changes: () => ({}),
+  },
 )
 
 /** tooltip 全文上限，超长值直接截断（spec-04 第 2 节） */

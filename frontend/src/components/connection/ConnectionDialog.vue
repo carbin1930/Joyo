@@ -216,19 +216,19 @@ async function onSave(): Promise<void> {
     <form class="conn-form" @submit.prevent>
       <label class="form-row">
         <span class="form-label">{{ zhCN.connection.field.name }}</span>
-        <input v-model="form.name" type="text" maxlength="50" :placeholder="`${form.host}-${form.port}`" />
+        <input v-model="form.name" type="text" maxlength="50" :placeholder="`${form.host}-${form.port}`">
       </label>
       <label class="form-row">
         <span class="form-label">{{ zhCN.connection.field.host }}</span>
-        <input v-model="form.host" type="text" required />
+        <input v-model="form.host" type="text" required>
       </label>
       <label class="form-row">
         <span class="form-label">{{ zhCN.connection.field.port }}</span>
-        <input v-model.number="form.port" type="number" min="1" max="65535" required />
+        <input v-model.number="form.port" type="number" min="1" max="65535" required>
       </label>
       <label class="form-row">
         <span class="form-label">{{ zhCN.connection.field.username }}</span>
-        <input v-model="form.username" type="text" required />
+        <input v-model="form.username" type="text" required>
       </label>
       <label class="form-row">
         <span class="form-label">{{ zhCN.connection.field.password }}</span>
@@ -237,7 +237,7 @@ async function onSave(): Promise<void> {
             v-model="form.password"
             :type="showPassword ? 'text' : 'password'"
             :placeholder="isEdit ? zhCN.connection.passwordKeepHint : ''"
-          />
+          >
           <button type="button" class="toggle-eye" @click="showPassword = !showPassword">
             {{ showPassword ? zhCN.connection.hide : zhCN.connection.show }}
           </button>
@@ -245,7 +245,7 @@ async function onSave(): Promise<void> {
       </label>
       <label class="form-row">
         <span class="form-label">{{ zhCN.connection.field.database }}</span>
-        <input v-model="form.defaultDatabase" type="text" />
+        <input v-model="form.defaultDatabase" type="text">
       </label>
 
       <div class="ssh-section" data-testid="ssh-section">
@@ -253,7 +253,7 @@ async function onSave(): Promise<void> {
           <span class="ssh-caret">{{ sshOpen ? '▾' : '▸' }}</span>
           <span>{{ zhCN.connection.ssh.title }}</span>
           <label class="ssh-toggle" @click.stop>
-            <input v-model="form.ssh.enabled" type="checkbox" />
+            <input v-model="form.ssh.enabled" type="checkbox">
             <span>{{ zhCN.connection.ssh.enabled }}</span>
           </label>
         </div>
@@ -265,25 +265,25 @@ async function onSave(): Promise<void> {
               type="text"
               :disabled="!form.ssh.enabled"
               :placeholder="zhCN.connection.ssh.hostPlaceholder"
-            />
+            >
           </label>
           <label class="form-row">
             <span class="form-label">{{ zhCN.connection.ssh.port }}</span>
-            <input v-model.number="form.ssh.port" type="number" min="1" max="65535" :disabled="!form.ssh.enabled" />
+            <input v-model.number="form.ssh.port" type="number" min="1" max="65535" :disabled="!form.ssh.enabled">
           </label>
           <label class="form-row">
             <span class="form-label">{{ zhCN.connection.ssh.username }}</span>
-            <input v-model="form.ssh.username" type="text" :disabled="!form.ssh.enabled" />
+            <input v-model="form.ssh.username" type="text" :disabled="!form.ssh.enabled">
           </label>
           <div class="form-row">
             <span class="form-label">{{ zhCN.connection.ssh.authType }}</span>
             <span class="auth-radios">
               <label>
-                <input v-model="form.ssh.authType" type="radio" value="password" :disabled="!form.ssh.enabled" />
+                <input v-model="form.ssh.authType" type="radio" value="password" :disabled="!form.ssh.enabled">
                 {{ zhCN.connection.ssh.authPassword }}
               </label>
               <label>
-                <input v-model="form.ssh.authType" type="radio" value="privateKey" :disabled="!form.ssh.enabled" />
+                <input v-model="form.ssh.authType" type="radio" value="privateKey" :disabled="!form.ssh.enabled">
                 {{ zhCN.connection.ssh.authPrivateKey }}
               </label>
             </span>
@@ -295,7 +295,7 @@ async function onSave(): Promise<void> {
                 v-model="form.ssh.password"
                 :type="showSshPassword ? 'text' : 'password'"
                 :disabled="!form.ssh.enabled"
-              />
+              >
               <button type="button" class="toggle-eye" @click="showSshPassword = !showSshPassword">
                 {{ showSshPassword ? zhCN.connection.hide : zhCN.connection.show }}
               </button>
@@ -305,7 +305,7 @@ async function onSave(): Promise<void> {
             <div class="form-row">
               <span class="form-label">{{ zhCN.connection.ssh.privateKeyPath }}</span>
               <span class="password-wrap">
-                <input v-model="form.ssh.privateKeyPath" type="text" :disabled="!form.ssh.enabled" />
+                <input v-model="form.ssh.privateKeyPath" type="text" :disabled="!form.ssh.enabled">
                 <button type="button" class="toggle-eye" :disabled="!form.ssh.enabled" @click="onPickKey">
                   {{ zhCN.connection.ssh.pickKey }}
                 </button>
@@ -313,7 +313,7 @@ async function onSave(): Promise<void> {
             </div>
             <label class="form-row">
               <span class="form-label">{{ zhCN.connection.ssh.passphrase }}</span>
-              <input v-model="form.ssh.passphrase" type="password" :disabled="!form.ssh.enabled" />
+              <input v-model="form.ssh.passphrase" type="password" :disabled="!form.ssh.enabled">
             </label>
           </template>
         </template>
