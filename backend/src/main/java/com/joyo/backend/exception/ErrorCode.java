@@ -33,7 +33,15 @@ public enum ErrorCode {
     /** SQL 语法/执行错误，message 为 MySQL 原始错误 */
     QUERY_ERROR(3001, "SQL 执行错误"),
     /** 查询超时 */
-    QUERY_TIMEOUT(3002, "查询超时");
+    QUERY_TIMEOUT(3002, "查询超时"),
+
+    // ===== 4xxx 表数据编辑（rest-api.md 第 5 节，spec-16） =====
+    /** 结果不可编辑：非单表 / 无主键 / 结果未包含主键列 / 结果被截断 */
+    NOT_EDITABLE(4101, "该结果不可编辑（需单表且包含主键列）"),
+    /** 数据变更执行失败，message 为 MySQL 原始错误（一请求一事务，失败整体回滚） */
+    MUTATION_FAILED(4102, "数据变更执行失败"),
+    /** 主键列不可修改 */
+    PRIMARY_KEY_READONLY(4103, "主键列不可修改");
 
     private final int code;
     private final String message;

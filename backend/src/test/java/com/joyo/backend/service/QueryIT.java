@@ -47,7 +47,8 @@ class QueryIT {
 
     private final ConnectionService connectionService = new ConnectionService(new SshTunnelManager());
     private final QueryResultCache cache = new QueryResultCache();
-    private final QueryService queryService = new QueryService(connectionService, cache);
+    private final QueryService queryService =
+            new QueryService(connectionService, cache, new EditableResolver());
 
     private QueryExecuteRequest request(String sql, Integer maxRows, Integer timeoutSec) {
         return new QueryExecuteRequest(sql, maxRows, timeoutSec, null);

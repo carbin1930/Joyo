@@ -126,6 +126,21 @@ body.joyo-resizing {
   font-style: italic;
 }
 
+/* 编辑态标记（spec-16 第 2 节）：脏单元格浅黄、待删除行淡红+删除线、新增行左侧蓝条 */
+.tabulator .tabulator-cell.joyo-cell-dirty {
+  background: #fdf6dd;
+}
+
+.tabulator .tabulator-row.joyo-row-deleted .tabulator-cell {
+  background: #fbe9e9;
+  text-decoration: line-through;
+  color: var(--joyo-text-muted);
+}
+
+.tabulator .tabulator-row.joyo-row-inserted .tabulator-cell:first-child {
+  box-shadow: inset 3px 0 0 var(--joyo-primary);
+}
+
 .joyo-cell-blob {
   color: var(--joyo-text-muted);
 }

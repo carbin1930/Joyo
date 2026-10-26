@@ -1,6 +1,7 @@
 package com.joyo.backend.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.joyo.backend.model.MutationModels.EditableInfo;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -60,7 +61,9 @@ public final class QueryModels {
             Integer page,
             Integer pageSize,
             Long affectedRows,
-            long elapsedMs) {
+            long elapsedMs,
+            /** 可编辑信息（spec-16）：非 null 时前端允许解锁编辑 */
+            EditableInfo editable) {
     }
 
     /** 多语句整体响应 */

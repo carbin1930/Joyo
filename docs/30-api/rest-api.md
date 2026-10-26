@@ -199,7 +199,8 @@ interface SaveConnectionInput {
       "truncated": false,
       "rows": [ ["1", "alice"], ["2", null] ],
       "page": 1, "pageSize": 100,
-      "elapsedMs": 12
+      "elapsedMs": 12,
+      "editable": { "schema": "joyo", "table": "user", "primaryKey": ["id"] }
     },
     { "ordinal": 2, "kind": "SELECT", "queryId": "aa11...", "...": "同上" }
   ],
@@ -211,6 +212,7 @@ interface SaveConnectionInput {
 - `rows` 为二维**字符串数组**：所有值转为字符串传输（含 null → `null` 字面量在 JSON 中即 `null`），避免 JS 精度丢失；前端不做类型转换
 - DML：`kind: "UPDATE"`，含 `affectedRows`，无 `queryId`/`columns`/`rows`
 - DDL：`kind: "DDL"`，仅 `affectedRows: 0`
+- `editable`（spec-16）：仅 SELECT 附带，为 null 表示不可编辑。判定：所有列 `ResultSetMetaData.getTableName()` 相同且非空（单表）+ 主键列（information_schema `COLUMN_KEY='PRI'`）**全部出现在结果列中**；否则 null
 - 失败语句抛业务错误（见错误码 3xxx），后端**中止后续语句**；已成功语句不返回（v0.1 简化：整体失败，不返回部分结果）
 
 ### GET /queries/{queryId}/rows?page=1&pageSize=100
@@ -232,6 +234,28 @@ X-Joyo-Token: <token>
 - `tableName` 仅 `insert` 必填；`rowLimit` 范围 1-5,000,000，空 = 全部
 - 格式细则见 spec-15 第 3 节（CSV 带 BOM/RFC 4180、INSERT 按 MySQL 默认模式转义、xlsx POI SXSSF）
 
+### POST /connections/{connectionId}/mutations（spec-16）
+
+表数据编辑：把前端暂存的增删改一次性提交，**一个请求一个事务**（全部成功 commit，任一条失败 rollback）。
+
+```
+POST /api/v1/connections/{id}/mutations
+X-Joyo-Token: <token>
+{ "database": "db1", "table": "users", "primaryKey": ["id"],
+  "operations": [
+    { "type": "update", "pk": { "id": "7" }, "values": { "name": "Bob" } },
+    { "type": "delete", "pk": { "id": "9" } },
+    { "type": "insert", "values": { "name": "New", "age": "18" } }
+  ] }
+```
+
+- 响应 data：`{ "applied": 3 }`
+- 值一律字符串；`values` 中 JSON `null` = SQL NULL
+- 语句由后端生成（`PreparedStatement` 参数绑定，列名经 information_schema 白名单校验）：
+  UPDATE 按主键定位 `UPDATE \`t\` SET \`c\`=? WHERE \`pk\`=?`；DELETE `DELETE FROM \`t\` WHERE \`pk\`=?`；INSERT 用提供的列
+- UPDATE/DELETE 影响 0 行视为失败（行已被删除/主键值变化）→ 整体回滚 + 4102
+- 错误：1001 参数非法（含非法列名）、4101 结果不可编辑、4102 执行失败（message 为 MySQL 原始错误）、4103 主键列不可修改
+
 ## 5. 错误码表
 
 | code | HTTP | 含义 | 前端文案建议 |
@@ -250,6 +274,9 @@ X-Joyo-Token: <token>
 | 3001 | 200 | SQL 语法/执行错误 | 显示 MySQL 原始错误 |
 | 3002 | 200 | 查询超时 | "查询超时（xx 秒）" |
 | 3003 | 200 | 查询被取消/中止 | "查询已中止" |
+| 4101 | 200 | 结果不可编辑（spec-16） | "该结果不可编辑（需单表且包含主键列）" |
+| 4102 | 200 | 数据变更执行失败（spec-16） | 显示 MySQL 原始错误 |
+| 4103 | 200 | 主键列不可修改（spec-16） | "主键列不可修改" |
 
 错误响应示例：
 ```json

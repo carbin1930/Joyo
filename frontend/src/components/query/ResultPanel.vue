@@ -3,12 +3,22 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ResultContextMenu from '@/components/result/ResultContextMenu.vue'
 import ResultGrid from '@/components/result/ResultGrid.vue'
 import ResultStatusBar from '@/components/result/ResultStatusBar.vue'
+import ResultEditToolbar from '@/components/result/ResultEditToolbar.vue'
+import SaveChangesDialog from '@/components/result/SaveChangesDialog.vue'
 import { hiddenColumnCount } from '@/composables/use-result-grid'
+import {
+  isDirty,
+  previewStatements,
+  summarize,
+  type ChangeSummary,
+} from '@/composables/use-result-edit'
+import { toast } from '@/composables/use-toast'
 import { zhCN } from '@/locales/zh-CN'
-import type { ResultTab } from '@/stores/query'
+import { useQueryStore, type ResultTab } from '@/stores/query'
 
 /**
- * 结果面板（展示层）：多语句 → 多 Tab；SELECT 网格 + 分页；DML/DDL 消息；错误面板。
+ * 结果面板（展示层）：多语句 → 多 Tab；SELECT 网格 + 分页；DML/DDL 消息；错误面板；
+ * spec-16：SELECT 结果附带编辑工具栏与保存确认弹窗（仅可编辑结果出现）。
  * 状态由父组件（QueryEditorView）按活动 SQL 页签传入。
  */
 
@@ -74,6 +84,63 @@ function onStatusPageSize(size: number): void {
   if (activeTab.value) emit('pageSize', activeTab.value, size)
 }
 
+// ===== 表数据编辑（spec-16） =====
+
+const store = useQueryStore()
+
+const editable = computed(() => activeTab.value?.statement?.editable ?? null)
+const editState = computed(() => (activeTab.value ? store.editStateOf(activeTab.value.id) : null))
+const dirty = computed(() => (editState.value ? isDirty(editState.value) : false))
+const summary = computed<ChangeSummary>(() =>
+  editState.value ? summarize(editState.value) : { insert: 0, update: 0, delete: 0 },
+)
+const statements = computed(() =>
+  editState.value && editable.value ? previewStatements(editState.value, editable.value) : [],
+)
+
+const hasSelection = ref(false)
+const saveOpen = ref(false)
+
+function onSelection(has: boolean): void {
+  hasSelection.value = has
+}
+
+function onCellEdit(payload: {
+  rowIndex: number
+  column: string
+  value: string | null
+  original: string | null
+  pk: Record<string, string | null>
+}): void {
+  if (!activeTab.value) return
+  store.recordCell(activeTab.value.id, payload)
+}
+
+function onDeleteRows(): void {
+  const tab = activeTab.value
+  if (!tab) return
+  const indexes = gridRef.value?.selectedRowIndexes() ?? []
+  if (indexes.length === 0) {
+    toast('info', zhCN.edit.selectRowFirst)
+    return
+  }
+  for (const rowIndex of indexes) {
+    store.markRowDeleted(tab.id, rowIndex, gridRef.value?.pkOfRow(rowIndex) ?? undefined)
+  }
+}
+
+function onConfirmSave(): void {
+  const tab = activeTab.value
+  if (!tab) return
+  saveOpen.value = false
+  void store.saveEdits(tab.id)
+}
+
+watch(() => props.activeTabId, () => {
+  saveOpen.value = false
+  hasSelection.value = false
+})
+
 /** 总页数（页大小变化后由状态条重新计算展示） */
 function totalPages(tab: ResultTab): number {
   const stmt = tab.statement
@@ -122,6 +189,20 @@ function totalPages(tab: ResultTab): number {
             @page="onStatusPage"
             @page-size="onStatusPageSize"
           />
+          <!-- spec-16：仅 SELECT 结果出现编辑工具栏（不可编辑时显示原因） -->
+          <ResultEditToolbar
+            :editable="editable"
+            :unlocked="editState?.unlocked ?? false"
+            :summary="summary"
+            :dirty="dirty"
+            :saving="store.savingEdit"
+            :has-selection="hasSelection"
+            @toggle="activeTab && store.toggleEdit(activeTab.id)"
+            @add-row="activeTab && store.addEditRow(activeTab.id)"
+            @delete-row="onDeleteRows"
+            @save="saveOpen = true"
+            @discard="activeTab && store.discardEdits(activeTab.id)"
+          />
           <div class="grid-wrap">
             <ResultGrid
               ref="gridRef"
@@ -129,7 +210,12 @@ function totalPages(tab: ResultTab): number {
               :rows="activeTab.statement.rows ?? []"
               :page="activeTab.statement.page ?? 1"
               :page-size="activeTab.statement.pageSize ?? 100"
+              :editable="editable"
+              :unlocked="editState?.unlocked ?? false"
+              :changes="editState?.changes ?? {}"
               @context="onGridContext"
+              @selection="onSelection"
+              @edit="onCellEdit"
             />
           </div>
         </template>
@@ -152,6 +238,16 @@ function totalPages(tab: ResultTab): number {
       :x="menu.x"
       :y="menu.y"
       @copy="copyViaMenu"
+    />
+
+    <!-- spec-16：保存改动确认弹窗 -->
+    <SaveChangesDialog
+      :open="saveOpen"
+      :summary="summary"
+      :statements="statements"
+      :saving="store.savingEdit"
+      @close="saveOpen = false"
+      @confirm="onConfirmSave"
     />
   </div>
 </template>

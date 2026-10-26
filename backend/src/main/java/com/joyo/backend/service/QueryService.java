@@ -5,6 +5,7 @@ import com.joyo.backend.exception.ErrorCode;
 import com.joyo.backend.model.QueryModels.ColumnMeta;
 import com.joyo.backend.model.QueryModels.QueryExecuteRequest;
 import com.joyo.backend.model.QueryModels.QueryExecuteResponse;
+import com.joyo.backend.model.MutationModels.EditableInfo;
 import com.joyo.backend.model.QueryModels.StatementResult;
 import com.joyo.backend.util.SqlIdentifiers;
 import com.joyo.backend.util.SqlSplitter;
@@ -38,10 +39,13 @@ public class QueryService {
 
     private final ConnectionService connectionService;
     private final QueryResultCache resultCache;
+    private final EditableResolver editableResolver;
 
-    public QueryService(ConnectionService connectionService, QueryResultCache resultCache) {
+    public QueryService(ConnectionService connectionService, QueryResultCache resultCache,
+                        EditableResolver editableResolver) {
         this.connectionService = connectionService;
         this.resultCache = resultCache;
+        this.editableResolver = editableResolver;
     }
 
     public QueryExecuteResponse execute(String connectionId, QueryExecuteRequest request) {
@@ -88,20 +92,21 @@ public class QueryService {
             boolean hasResultSet = stmt.execute(sql);
 
             if (hasResultSet) {
-                return executeSelect(stmt, ordinal, request, start);
+                return executeSelect(conn, stmt, ordinal, request, start);
             }
             long affected = stmt.getUpdateCount();
             String kind = affected >= 0 ? "UPDATE" : "DDL";
             log.debug("语句执行完成: ordinal={}, kind={}, affected={}", ordinal, kind, affected);
             return new StatementResult(ordinal, kind, null, null, null, null, null,
-                    null, null, null, Math.max(affected, 0), System.currentTimeMillis() - start);
+                    null, null, null, Math.max(affected, 0), System.currentTimeMillis() - start, null);
         } catch (SQLException e) {
             throw classify(e);
         }
     }
 
     private StatementResult executeSelect(
-            Statement stmt, int ordinal, QueryExecuteRequest request, long start) throws SQLException {
+            Connection conn, Statement stmt, int ordinal, QueryExecuteRequest request, long start)
+            throws SQLException {
         try (ResultSet rs = stmt.getResultSet()) {
             var meta = rs.getMetaData();
             int columnCount = meta.getColumnCount();
@@ -143,9 +148,13 @@ public class QueryService {
             String queryId = resultCache.put(rows, !truncated, rows.size());
             int pageSize = Math.min(limit, FIRST_PAGE_SIZE);
             List<String[]> firstPage = rows.subList(0, Math.min(pageSize, rows.size()));
+            // spec-16：单表且含全部主键列、且结果未截断时方可编辑（截断时改数可能基于不完整结果）
+            EditableInfo editable = truncated ? null
+                    : editableResolver.resolve(conn, meta,
+                            columns.stream().map(ColumnMeta::name).toList(), request.databaseOrEmpty());
             return new StatementResult(ordinal, "SELECT", queryId, columns,
                     !truncated, (long) rows.size(), truncated, firstPage, 1, pageSize,
-                    null, System.currentTimeMillis() - start);
+                    null, System.currentTimeMillis() - start, editable);
         }
     }
 

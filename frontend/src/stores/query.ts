@@ -1,6 +1,16 @@
 ﻿import { defineStore } from 'pinia'
 import { executeQuery, getQueryRows } from '@/api/query'
+import { applyMutations } from '@/api/mutations'
 import { toast } from '@/composables/use-toast'
+import {
+  addInsertRow,
+  buildPayload,
+  createState,
+  discard,
+  markDeleted,
+  setCell,
+  type EditState,
+} from '@/composables/use-result-edit'
 import type { StatementResult } from '@/types/api'
 import type { HistoryEntryInput } from '@/types/ipc'
 import { zhCN } from '@/locales/zh-CN'
@@ -83,9 +93,12 @@ export const useQueryStore = defineStore('query', {
     resultsByTab: {} as Record<string, ResultTab[]>,
     activeResultByTab: {} as Record<string, string | null>,
     executing: false,
+    savingEdit: false,
     maxRows: 1000,
     insertRequest: null as { text: string; seq: number } | null,
     resultsRev: 0,
+    /** spec-16：结果编辑态，按结果页签 id 隔离（翻页/切换页签不清空） */
+    edits: {} as Record<string, EditState>,
   }),
 
   getters: {
@@ -211,6 +224,8 @@ export const useQueryStore = defineStore('query', {
           maxRows: this.maxRows,
           database: tab.db ? tab.db : undefined,
         })
+        // 重跑视为放弃旧改动（旧结果页签的编辑态一并清理）
+        for (const old of this.resultsByTab[tabId] ?? []) delete this.edits[old.id]
         this.resultsByTab[tabId] = resp.statements.map((s) => toTab(s, resp.statements.length))
         const first = this.resultsByTab[tabId][0]
         this.activeResultByTab[tabId] = first ? first.id : null
@@ -278,6 +293,90 @@ export const useQueryStore = defineStore('query', {
     /** 改每页行数后回到第 1 页（spec-04 状态条） */
     async changePageSize(tab: ResultTab, pageSize: number): Promise<void> {
       await this.loadPage(tab, 1, pageSize)
+    },
+
+    // ===== 表数据编辑（spec-16） =====
+
+    /** 结果页签的编辑态（懒创建） */
+    editStateOf(resultTabId: string): EditState {
+      if (!this.edits[resultTabId]) this.edits[resultTabId] = createState()
+      return this.edits[resultTabId]
+    },
+
+    toggleEdit(resultTabId: string): void {
+      const state = this.editStateOf(resultTabId)
+      state.unlocked = !state.unlocked
+    },
+
+    /** 记录单元格改动（pk 为该行主键原值快照，供生成 WHERE） */
+    recordCell(
+      resultTabId: string,
+      payload: {
+        rowIndex: number
+        column: string
+        value: string | null
+        original: string | null
+        pk?: Record<string, string | null>
+      },
+    ): void {
+      setCell(
+        this.editStateOf(resultTabId),
+        payload.rowIndex,
+        payload.column,
+        payload.value,
+        payload.original,
+        payload.pk,
+      )
+    },
+
+    markRowDeleted(
+      resultTabId: string,
+      rowIndex: number,
+      pk?: Record<string, string | null>,
+    ): void {
+      markDeleted(this.editStateOf(resultTabId), rowIndex, pk)
+    },
+
+    addEditRow(resultTabId: string): number {
+      return addInsertRow(this.editStateOf(resultTabId))
+    },
+
+    discardEdits(resultTabId: string): void {
+      discard(this.editStateOf(resultTabId))
+    },
+
+    /** 保存改动：一个事务提交后重跑当前 SQL 刷新结果 */
+    async saveEdits(resultTabId: string): Promise<void> {
+      const owner = this.sqlTabs.find((t) =>
+        (this.resultsByTab[t.id] ?? []).some((r) => r.id === resultTabId),
+      )
+      const stmt = owner
+        ? this.resultsByTab[owner.id]?.find((r) => r.id === resultTabId)?.statement
+        : undefined
+      if (!owner || !stmt?.editable) return
+
+      let payload
+      try {
+        payload = buildPayload(this.editStateOf(resultTabId), stmt.editable, owner.db || undefined)
+      } catch (e) {
+        toast('error', e instanceof Error ? e.message : String(e))
+        return
+      }
+
+      this.savingEdit = true
+      try {
+        const resp = await applyMutations(owner.connectionId, payload)
+        toast('success', zhCN.edit.saved(resp.applied))
+        const state = this.editStateOf(resultTabId)
+        discard(state)
+        state.unlocked = false
+        await this.execute(owner.id, this.drafts[owner.id] ?? '')
+      } catch (e) {
+        // 失败保留改动（后端已整体回滚），用户可修正后重试
+        toast('error', e instanceof Error ? e.message : String(e))
+      } finally {
+        this.savingEdit = false
+      }
     },
 
     /** 请求编辑器在光标处插入文本（由 MonacoEditor 监听执行） */

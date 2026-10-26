@@ -43,7 +43,7 @@ class QueryControllerTest {
                 List.of(new StatementResult(1, "SELECT", "q-1",
                         List.of(new ColumnMeta("id", "BIGINT", true)),
                         true, 2L, false, List.<String[]>of(new String[] {"1", "alice"}), 1, 100,
-                        null, 12L)),
+                        null, 12L, null)),
                 20L));
 
         mockMvc.perform(post("/api/v1/connections/conn-1/queries")

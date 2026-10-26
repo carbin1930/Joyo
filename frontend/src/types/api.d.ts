@@ -97,11 +97,38 @@ export interface StatementResult {
   totalKnown?: boolean
   totalRows?: number
   truncated?: boolean
-  rows?: string[][]
+  rows?: (string | null)[][]
   page?: number
   pageSize?: number
   affectedRows?: number
   elapsedMs: number
+  /** 可编辑信息（spec-16）：仅 SELECT 附带，null/undefined 表示不可编辑 */
+  editable?: EditableInfo | null
+}
+
+/** 结果可编辑信息（spec-16）：单表 + 结果含全部主键列时才有 */
+export interface EditableInfo {
+  schema: string
+  table: string
+  primaryKey: string[]
+}
+
+/** 单行变更（spec-16）：values/pk 中 null 即 SQL NULL */
+export interface MutationOperation {
+  type: 'insert' | 'update' | 'delete'
+  pk?: Record<string, string | null>
+  values?: Record<string, string | null>
+}
+
+export interface MutationRequest {
+  database?: string
+  table: string
+  primaryKey: string[]
+  operations: MutationOperation[]
+}
+
+export interface MutationResponse {
+  applied: number
 }
 
 export interface QueryExecuteResponse {

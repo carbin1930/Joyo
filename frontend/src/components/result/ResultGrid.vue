@@ -1,20 +1,37 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { TabulatorFull as Tabulator } from 'tabulator-tables'
-import type { CellComponent, ColumnDefinition } from 'tabulator-tables'
-import type { ColumnMeta } from '@/types/api'
+import type { CellComponent, ColumnDefinition, RowComponent } from 'tabulator-tables'
+import type { ColumnMeta, EditableInfo } from '@/types/api'
 import { copyText, isBinaryType, toCsv, toTsv } from '@/composables/use-clipboard'
-import { MAX_RENDERED_COLUMNS, toGridRows, visibleColumns } from '@/composables/use-result-grid'
+import {
+  MAX_RENDERED_COLUMNS,
+  toGridRows,
+  visibleColumns,
+  type GridRow,
+} from '@/composables/use-result-grid'
+import { parseCellInput, type RowChange } from '@/composables/use-result-edit'
 import { toast } from '@/composables/use-toast'
 import { zhCN } from '@/locales/zh-CN'
 
 /**
- * 结果网格（spec-04）：Tabulator 只读 + 虚拟滚动 + 列宽拖拽 + 选区复制。
+ * 结果网格（spec-04 + spec-16）：Tabulator 虚拟滚动 + 列宽拖拽 + 选区复制。
+ * 默认只读（双击编辑仅用于选取文本，提交后还原）；spec-16 解锁后单元格可提交改动（emit edit）。
  * 渲染、选区、复制/编辑态都在此组件内；右键菜单由 ResultPanel 渲染（emit context）。
  */
 
 const emit = defineEmits<{
   context: [payload: { x: number; y: number; hasSelection: boolean }]
+  /** spec-16：选区变化（工具栏"删除行"的可用态） */
+  selection: [has: boolean]
+  /** spec-16：解锁态下单元格提交改动（含该行主键原值快照） */
+  edit: [payload: {
+    rowIndex: number
+    column: string
+    value: string | null
+    original: string | null
+    pk: Record<string, string | null>
+  }]
 }>()
 
 /** 复制格式：TSV 供 Excel 粘贴，CSV 供文件/表格导入 */
@@ -30,8 +47,14 @@ const props = withDefaults(
     page?: number
     pageSize?: number
     maxColumns?: number
+    /** spec-16：可编辑信息；null 表示不可编辑 */
+    editable?: EditableInfo | null
+    /** spec-16：是否解锁编辑 */
+    unlocked?: boolean
+    /** spec-16：本地改动（按全局行号索引，新增行为负数） */
+    changes?: Record<number, RowChange>
   }>(),
-  { page: 1, pageSize: 100, maxColumns: MAX_RENDERED_COLUMNS },
+  { page: 1, pageSize: 100, maxColumns: MAX_RENDERED_COLUMNS, editable: null, unlocked: false },
 )
 
 /** tooltip 全文上限，超长值直接截断（spec-04 第 2 节） */
@@ -72,6 +95,28 @@ function renderedColumnCount(): number {
   return visibleColumns(props.columns, props.maxColumns).length
 }
 
+/** 主键列名集合（spec-16：主键列只读） */
+function pkColumns(): Set<string> {
+  return new Set(props.editable?.primaryKey ?? [])
+}
+
+/** 可编辑条件：已解锁 + 非主键列 + 非二进制列 */
+function canEdit(col: ColumnMeta): boolean {
+  return props.unlocked === true && !pkColumns().has(col.name) && !isBinaryType(col.type)
+}
+
+/** 字段名 c{n} → 列定义 */
+function columnOfField(field: string): ColumnMeta | null {
+  if (!field || !field.startsWith('c')) return null
+  return visibleColumns(props.columns, props.maxColumns)[Number(field.slice(1))] ?? null
+}
+
+/** 该格是否有未保存改动（用于脏标记底纹） */
+function isDirtyCell(rowIndex: number, column: string): boolean {
+  const change = props.changes?.[rowIndex]
+  return change?.kind === 'update' && change.values != null && column in change.values
+}
+
 function buildColumns(): ColumnDefinition[] {
   const rownum: ColumnDefinition = {
     title: '#',
@@ -82,24 +127,99 @@ function buildColumns(): ColumnDefinition[] {
     headerSort: false,
     cssClass: 'joyo-rownum',
   }
+  const locked = pkColumns()
   const dataColumns = visibleColumns(props.columns, props.maxColumns).map<ColumnDefinition>(
     (col, ci) => ({
-      title: col.name,
+      title: locked.has(col.name) ? `🔒 ${col.name}` : col.name,
       field: `c${ci}`,
-      headerTooltip: col.type,
+      headerTooltip: locked.has(col.name) ? `${col.type} · ${zhCN.edit.pkReadonly}` : col.type,
       minWidth: 60,
-      formatter: (cell: CellComponent) => renderCell(cell, col.type),
+      formatter: (cell: CellComponent) => {
+        const html = renderCell(cell, col.type)
+        const rowIndex = Number(cell.getRow().getData().__idx ?? Number.NaN)
+        cell.getElement().classList.toggle('joyo-cell-dirty', isDirtyCell(rowIndex, col.name))
+        return html
+      },
       tooltip: (_event: Event, cell: CellComponent) => cellTooltip(cell, col.type),
-      // 双击进入编辑态仅用于选取文本复制（提交后由 cellEdited 还原原值）
+      // 双击进入编辑态：锁定态仅用于选取文本复制（提交后由 cellEdited 还原原值）；解锁态可提交改动
       editor: 'input',
       selectContents: true,
+      editable: () => canEdit(col),
     }),
   )
   return [rownum, ...dataColumns]
 }
 
-function buildRows() {
-  return toGridRows(props.rows, renderedColumnCount(), props.page, props.pageSize)
+/**
+ * 网格数据：基础行（全局行号 __idx）→ 叠加未保存的改动值 → 末尾追加新增行。
+ * 新增行行号为负数，__rownum 显示"新"。
+ */
+function buildRows(): GridRow[] {
+  const cols = visibleColumns(props.columns, props.maxColumns)
+  const base = toGridRows(props.rows, cols.length, props.page, props.pageSize)
+  const rows: GridRow[] = base.map((record) => {
+    const rowIndex = Number(record.__rownum) - 1
+    const merged: GridRow = { ...record, __idx: rowIndex }
+    const change = props.changes?.[rowIndex]
+    if (change?.kind === 'update' && change.values) {
+      for (const [name, value] of Object.entries(change.values)) {
+        const ci = cols.findIndex((c) => c.name === name)
+        if (ci >= 0) merged[`c${ci}`] = value
+      }
+    }
+    return merged
+  })
+
+  const inserts = Object.entries(props.changes ?? {})
+    .map(([key, change]) => ({ rowIndex: Number(key), change }))
+    .filter((item) => item.change.kind === 'insert')
+    .sort((a, b) => a.rowIndex - b.rowIndex)
+  for (const { rowIndex, change } of inserts) {
+    const record: GridRow = { __rownum: zhCN.edit.newRow, __idx: rowIndex }
+    for (let ci = 0; ci < cols.length; ci += 1) {
+      const value = change.values?.[cols[ci].name]
+      record[`c${ci}`] = value === undefined ? null : value
+    }
+    rows.push(record)
+  }
+  return rows
+}
+
+/** 该行主键列的当前值快照（保存时用于生成 WHERE） */
+function pkSnapshot(data: Record<string, unknown>): Record<string, string | null> {
+  const cols = visibleColumns(props.columns, props.maxColumns)
+  const snapshot: Record<string, string | null> = {}
+  for (const name of props.editable?.primaryKey ?? []) {
+    const ci = cols.findIndex((c) => c.name === name)
+    if (ci >= 0) snapshot[name] = (data[`c${ci}`] as string | null) ?? null
+  }
+  return snapshot
+}
+
+/** 指定行的主键值快照（删除行时用于生成 WHERE） */
+function pkOfRow(rowIndex: number): Record<string, string | null> | null {
+  if (!table) return null
+  const row = table.getRows().find((r) => Number(r.getData().__idx ?? Number.NaN) === rowIndex)
+  return row ? pkSnapshot(row.getData() as Record<string, unknown>) : null
+}
+
+/** 当前选中的全局行号（整行选中或单元格选区所在行） */
+function selectedRowIndexes(): number[] {
+  if (!table) return []
+  const indexes = new Set<number>()
+  for (const row of table.getSelectedRows()) {
+    const idx = Number(row.getData().__idx ?? Number.NaN)
+    if (!Number.isNaN(idx)) indexes.add(idx)
+  }
+  for (const range of table.getRanges()) {
+    for (const cells of range.getStructuredCells()) {
+      for (const cell of cells) {
+        const idx = Number(cell.getRow().getData().__idx ?? Number.NaN)
+        if (!Number.isNaN(idx)) indexes.add(idx)
+      }
+    }
+  }
+  return [...indexes]
 }
 
 // ===== 复制（spec-04 第 4 节）=====
@@ -193,7 +313,7 @@ function onContextMenu(event: MouseEvent): void {
   event.preventDefault()
 }
 
-defineExpose({ copy })
+defineExpose({ copy, selectedRowIndexes, hasSelection, pkOfRow })
 
 onMounted(() => {
   if (!hostRef.value) return
@@ -211,30 +331,74 @@ onMounted(() => {
     selectableRange: true,
     selectableRows: true,
     clipboard: false,
+    // spec-16：待删除行淡红 + 删除线；新增行左侧蓝色标记条
+    rowFormatter: (row: RowComponent) => {
+      const rowIndex = Number(row.getData().__idx ?? Number.NaN)
+      const change = props.changes?.[rowIndex]
+      const element = row.getElement()
+      element.classList.toggle('joyo-row-deleted', change?.kind === 'delete')
+      element.classList.toggle('joyo-row-inserted', change?.kind === 'insert')
+    },
   })
 
-  // 双击进入编辑态仅为复制文本（回车/Esc 退出后还原原值，不写库）
+  // 双击进入编辑态：锁定态仅为复制文本（回车/Esc 退出后还原原值，不写库）；
+  // 解锁态下主键列与二进制列不进入编辑态
   table.on('cellDblClick', (_event: Event, cell: CellComponent) => {
+    const col = columnOfField(cell.getField())
+    if (props.unlocked && col && !canEdit(col)) return
     void cell.edit(true)
   })
   table.on('cellEdited', (cell: CellComponent) => {
-    const oldValue = cell.getOldValue()
-    if (oldValue !== undefined && oldValue !== null) cell.setValue(oldValue, false)
+    const oldValue = (cell.getOldValue() as string | null | undefined) ?? null
+    if (!props.unlocked) {
+      // 只读语义：还原原值（原值为 null 时保持 NULL 展示）
+      cell.setValue(oldValue, false)
+      return
+    }
+    const col = columnOfField(cell.getField())
+    const rowIndex = Number(cell.getRow().getData().__idx ?? Number.NaN)
+    if (!col || Number.isNaN(rowIndex)) return
+    const raw = cell.getValue() as string | null
+    // spec-16：全大写 NULL 关键字 = SQL NULL，其余（空串/小写 null）为字面值
+    const value = raw === null ? null : parseCellInput(String(raw))
+    cell.setValue(value, false)
+    emit('edit', {
+      rowIndex,
+      column: col.name,
+      value,
+      original: oldValue,
+      pk: pkSnapshot(cell.getRow().getData()),
+    })
   })
   table.on('cellContext', (event: Event, _cell: CellComponent) => {
     const mouse = event as MouseEvent
     emit('context', { x: mouse.clientX, y: mouse.clientY, hasSelection: hasSelection() })
   })
 
+  // spec-16：选区变化同步给面板（"删除行"按钮可用态）
+  const syncSelection = (): void => emit('selection', hasSelection())
+  table.on('rowSelected', syncSelection)
+  table.on('rowDeselected', syncSelection)
+  table.on('rangeChanged', syncSelection)
+  table.on('cellClick', syncSelection)
+
   hostRef.value.addEventListener('keydown', onKeydown)
   hostRef.value.addEventListener('contextmenu', onContextMenu)
 })
 
+// 列结构变化（列/上限/解锁态）才重建列，避免改动单元格时列宽与滚动被重置
 watch(
-  () => [props.columns, props.rows, props.page, props.pageSize, props.maxColumns],
+  () => [props.columns, props.maxColumns, props.unlocked],
   () => {
     if (!table) return
     table.setColumns(buildColumns())
+  },
+)
+
+watch(
+  () => [props.columns, props.rows, props.page, props.pageSize, props.maxColumns, props.changes],
+  () => {
+    if (!table) return
     void table.replaceData(buildRows())
   },
 )
