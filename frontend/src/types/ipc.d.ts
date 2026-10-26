@@ -4,6 +4,18 @@
 
 import type { MetricsTick } from './api'
 
+/** 导出任务（spec-15，与 desktop/src/main/export-runner.ts 的 ExportJob 一致） */
+export interface ExportJob {
+  connectionId: string
+  sql: string
+  format: 'csv' | 'insert' | 'xlsx'
+  database?: string
+  tableName?: string
+  rowLimit?: number
+}
+
+export type ExportResult = { canceled: true } | { canceled: false; filePath: string; bytes: number }
+
 export interface JoyoLaunchConfig {
   /** 后端地址，如 http://127.0.0.1:18080 */
   baseUrl: string
@@ -102,6 +114,8 @@ declare global {
       copyText(text: string): Promise<void>
       /** spec-14：订阅资源监控推送（Main 每 3s 一帧）；返回取消订阅函数 */
       onMetrics(cb: (tick: MetricsTick) => void): () => void
+      /** spec-15：导出（保存对话框 → Main 拉流写盘） */
+      exportRun(job: ExportJob & { defaultFileName: string }): Promise<ExportResult>
       /** 查询历史有新增（spec-05）；返回取消订阅函数 */
       onHistoryUpdated(cb: () => void): () => void
       connections: {

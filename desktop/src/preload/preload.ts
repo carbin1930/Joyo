@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { MetricsTick } from '../main/metrics-sampler'
+import type { ExportJob } from '../main/export-runner'
 
 /**
  * Preload：仅通过 contextBridge 暴露白名单 API（overview.md 第 4 节安全模型）。
@@ -29,6 +30,11 @@ contextBridge.exposeInMainWorld('joyo', {
     ipcRenderer.on('metrics:tick', listener)
     return () => ipcRenderer.removeListener('metrics:tick', listener)
   },
+  /** spec-15：导出（保存对话框 → Main 拉流写盘）；取消返回 { canceled: true } */
+  exportRun: (
+    job: ExportJob & { defaultFileName: string },
+  ): Promise<{ canceled: true } | { canceled: false; filePath: string; bytes: number }> =>
+    ipcRenderer.invoke('export:run', job),
   /** 查询历史有新增（spec-05）：返回取消订阅函数 */
   onHistoryUpdated: (cb: () => void): (() => void) => {
     const listener = () => cb()

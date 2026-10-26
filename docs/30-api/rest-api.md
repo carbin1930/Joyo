@@ -217,6 +217,21 @@ interface SaveConnectionInput {
 
 结果翻页。返回 data：`{ "queryId", "rows", "page", "pageSize", "totalKnown", "totalRows" }`。
 
+### POST /export（spec-15）
+
+导出为文件流（**响应不是** ApiResponse JSON）。开流前失败（参数 1001、连接 2001、SQL 3xxx）→ 标准 ApiResponse 错误 JSON；开流后失败表现为流中断。
+
+```
+POST /api/v1/export
+X-Joyo-Token: <token>
+{ "connectionId": "c1", "sql": "SELECT ...", "format": "csv|insert|xlsx",
+  "database": "db1", "tableName": "t1", "rowLimit": 100000 }
+```
+
+- 成功：文件流 + `Content-Disposition: attachment`（`text/csv;charset=UTF-8` / `application/sql` / xlsx MIME）
+- `tableName` 仅 `insert` 必填；`rowLimit` 范围 1-5,000,000，空 = 全部
+- 格式细则见 spec-15 第 3 节（CSV 带 BOM/RFC 4180、INSERT 按 MySQL 默认模式转义、xlsx POI SXSSF）
+
 ## 5. 错误码表
 
 | code | HTTP | 含义 | 前端文案建议 |
@@ -245,6 +260,5 @@ interface SaveConnectionInput {
 
 - 查询历史（spec-05）：**不经过后端**。由 Electron Main 持久化（better-sqlite3），IPC 通道 `history:append` / `history:list` / `history:delete` / `history:clear`（契约见 spec-05 第 3 节）
 - SSH 隧道（spec-06）：连接模型 `sshTunnel` 对象落地；`/connections/test` 与 session 请求体增加可选 `sshTunnel` 字段（JSch fork `com.github.mwiede:jsch:0.2.x`，隧道由后端建立，错误码 2005）
-- `POST /export`（spec-15 导出/F07，v0.3，流式响应）
 - `POST /queries/{queryId}/cancel`（查询中断，v0.4）
 - `POST /sync/compare`、`POST /sync/execute`（spec-12 表/数据同步，v0.5）

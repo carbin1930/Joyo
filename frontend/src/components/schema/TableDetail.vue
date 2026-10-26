@@ -2,11 +2,13 @@
 import { computed, ref } from 'vue'
 import { useSchemaStore } from '@/stores/schema'
 import { toast } from '@/composables/use-toast'
+import ExportDialog from '@/components/export/ExportDialog.vue'
 import { zhCN } from '@/locales/zh-CN'
 import type { TableColumn } from '@/types/api'
 
 /**
  * 表详情面板（spec-02 第 2 节）：三个 Tab——列 / 索引 / DDL，DDL 可复制。
+ * spec-15：顶部"导出数据"入口（SELECT * 整表导出）。
  */
 
 const schemaStore = useSchemaStore()
@@ -14,6 +16,20 @@ const activeTab = ref<'columns' | 'indexes' | 'ddl'>('columns')
 
 const location = computed(() => schemaStore.selectedTableLocation)
 const detail = computed(() => schemaStore.selectedDetail())
+
+/** 整表导出（spec-15 第 1 节入口 2） */
+const exportOpen = ref(false)
+const exportSource = computed(() => {
+  const loc = location.value
+  const connectionId = schemaStore.activeConnectionId
+  if (!loc || !connectionId) return null
+  return {
+    connectionId,
+    database: loc.schema,
+    sql: `SELECT * FROM \`${loc.schema}\`.\`${loc.table}\``,
+    defaultTable: loc.table,
+  }
+})
 
 function keyLabel(key: string | null): string {
   switch (key) {
@@ -54,6 +70,15 @@ function columnTypeText(col: TableColumn): string {
         <template v-if="location">{{ location.schema }}.{{ location.table }}</template>
       </h2>
       <span class="header-spacer" />
+      <!-- spec-15：整表导出入口 -->
+      <button
+        v-if="location && exportSource"
+        class="close-btn"
+        data-testid="export-data-btn"
+        @click="exportOpen = true"
+      >
+        {{ zhCN.export.openData }}
+      </button>
       <button class="close-btn" data-testid="back-to-editor" @click="closeDetail">
         {{ zhCN.schema.detail.backToEditor }}
       </button>
@@ -68,6 +93,7 @@ function columnTypeText(col: TableColumn): string {
     <div v-else-if="!detail" class="detail-empty">{{ zhCN.schema.detail.loadFailed }}</div>
 
     <template v-else>
+    <ExportDialog :open="exportOpen" :source="exportSource" @close="exportOpen = false" />
       <div class="tabs">
         <button
           class="tab"

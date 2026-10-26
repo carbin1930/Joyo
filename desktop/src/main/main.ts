@@ -7,6 +7,7 @@ import { SafeStorageCipher } from './safe-storage-cipher'
 import { ConnectionsStore, connectionsFilePath } from './secure-store'
 import { resolveBackend, type ResolvedBackend } from './sidecar'
 import { createHealthFetcher, startMetricsSampler } from './metrics-sampler'
+import { downloadExport, type ExportJob } from './export-runner'
 
 /**
  * Electron 主进程入口（docs/10-architecture/overview.md 第 2 节）：
@@ -147,6 +148,27 @@ app.whenReady().then(async () => {
     })
     ipcMain.handle('clipboard:write-text', (_event, text: string) => {
       clipboard.writeText(text)
+    })
+
+    // spec-15：导出（保存对话框 → Main 拉后端流写盘，渲染层不经手文件内容）
+    ipcMain.handle('export:run', async (_event, job: ExportJob & { defaultFileName: string }) => {
+      if (!backend) throw new Error('后端尚未就绪')
+      const { defaultFileName, ...payload } = job
+      const filters =
+        job.format === 'csv'
+          ? [{ name: 'CSV 文件', extensions: ['csv'] }]
+          : job.format === 'insert'
+            ? [{ name: 'SQL 文件', extensions: ['sql'] }]
+            : [{ name: 'Excel 工作簿', extensions: ['xlsx'] }]
+      const result = await dialog.showSaveDialog(win!, {
+        defaultPath: defaultFileName,
+        filters,
+      })
+      if (result.canceled || !result.filePath) {
+        return { canceled: true }
+      }
+      const bytes = await downloadExport(fetch, backend.baseUrl, backend.token, result.filePath, payload)
+      return { canceled: false, filePath: result.filePath, bytes }
     })
 
     createWindow()

@@ -59,6 +59,12 @@
             <artifactId>jsch</artifactId>
             <version>0.2.21</version>
         </dependency>
+        <!-- Excel 导出（spec-15）：SXSSF 流式写，大结果集内存可控 -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

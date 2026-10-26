@@ -5,6 +5,7 @@ import HistoryPanel from '@/components/query/HistoryPanel.vue'
 import ResultPanel from '@/components/query/ResultPanel.vue'
 import TableDetail from '@/components/schema/TableDetail.vue'
 import LogPanel from '@/components/log/LogPanel.vue'
+import ExportDialog from '@/components/export/ExportDialog.vue'
 import { useConnectionStore } from '@/stores/connection'
 import { useQueryStore } from '@/stores/query'
 import { useSchemaStore } from '@/stores/schema'
@@ -23,6 +24,18 @@ const schemaStore = useSchemaStore()
 const editorRef = ref<InstanceType<typeof MonacoEditor> | null>(null)
 /** 查询历史面板开关（spec-05） */
 const historyOpen = ref(false)
+
+/** 导出弹窗（spec-15）：以当前页签 SQL 重跑导出 */
+const exportOpen = ref(false)
+const canExport = computed(() => !!activeTab.value && !!connectionId.value && draft.value.trim().length > 0)
+const exportSource = computed(() =>
+  activeTab.value && connectionId.value
+    ? {
+        connectionId: connectionId.value,
+        database: activeTab.value.db || undefined,
+        sql: draft.value.trim(),
+      }
+    : null)
 
 /** 历史回填：替换编辑器全部内容、关闭面板、焦点回编辑器 */
 function onFillHistory(sql: string): void {
@@ -218,6 +231,14 @@ function closeTab(e: MouseEvent, id: string): void {
         >
           {{ zhCN.history.open }}
         </el-button>
+        <!-- spec-15：导出（查询结果入口，重跑当前 SQL） -->
+        <el-button
+          data-testid="export-btn"
+          :disabled="!canExport || queryStore.executing"
+          @click="exportOpen = true"
+        >
+          {{ zhCN.export.open }}
+        </el-button>
         <span class="toolbar-hint">Ctrl+Enter</span>
         <span class="spacer" />
         <label class="max-rows">
@@ -294,6 +315,9 @@ function closeTab(e: MouseEvent, id: string): void {
     </template>
 
     <div v-else class="no-tabs-hint">{{ zhCN.query.noSqlTab }}</div>
+
+    <!-- spec-15：导出弹窗 -->
+    <ExportDialog :open="exportOpen" :source="exportSource" @close="exportOpen = false" />
   </section>
 </template>
 

@@ -33,6 +33,23 @@ export const zhCN = {
     backendOffline: '后端离线',
     tooltipBackend: 'Joyo 后端（Spring Boot Sidecar）',
   },
+  export: {
+    // ===== 导出（spec-15 第 2 节） =====
+    open: '导出',
+    openData: '导出数据',
+    title: '导出数据',
+    formatLabel: '格式',
+    formatCsv: 'CSV',
+    formatInsert: 'SQL INSERT',
+    formatXlsx: 'Excel (.xlsx)',
+    tableNameLabel: '目标表名',
+    tableNameHint: 'INSERT 语句使用的表名',
+    tableNameRequired: 'INSERT 导出必须填写表名',
+    rowLimitLabel: '行数上限（空=全部）',
+    do: '导出',
+    exporting: '导出中…',
+    done: '导出成功',
+  },
   query: {
     run: '运行',
     running: '执行中…',
