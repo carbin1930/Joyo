@@ -96,6 +96,15 @@ public class MetadataService {
         });
     }
 
+    /**
+     * spec-17：只读列与索引（不取 DDL）。
+     * 用于同步比对——表不存在时 information_schema 返回空列表，不会像 SHOW CREATE TABLE 那样报错。
+     */
+    public TableDetailResponse structure(Connection conn, String schema, String table)
+            throws SQLException {
+        return new TableDetailResponse(loadColumns(conn, schema, table), loadIndexes(conn, schema, table), null);
+    }
+
     private List<TableColumn> loadColumns(Connection conn, String schema, String table) throws SQLException {
         String sql = "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, "
                 + "COLUMN_KEY, COLUMN_DEFAULT, EXTRA, COLUMN_COMMENT, ORDINAL_POSITION "

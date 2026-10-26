@@ -5,6 +5,8 @@ import { HistoryStore, historyFilePath } from './history-store'
 import { registerHistoryIpc } from './history-ipc'
 import { SafeStorageCipher } from './safe-storage-cipher'
 import { ConnectionsStore, connectionsFilePath } from './secure-store'
+import { SettingsStore, settingsFilePath, type AppSettings } from './settings-store'
+import { UpdateManager } from './updater'
 import { resolveBackend, type ResolvedBackend } from './sidecar'
 import { createHealthFetcher, startMetricsSampler } from './metrics-sampler'
 import { downloadExport, type ExportJob } from './export-runner'
@@ -141,6 +143,17 @@ app.whenReady().then(async () => {
 
     // 查询历史持久化（spec-05）：userData/history.json，不经后端
     registerHistoryIpc(new HistoryStore(historyFilePath(app.getPath('userData'))))
+
+    // spec-18/F10：全局设置持久化（userData/settings.json），渲染层只读写 IPC
+    const settingsStore = new SettingsStore(settingsFilePath(app.getPath('userData')))
+    ipcMain.handle('settings:get', () => settingsStore.load())
+    ipcMain.handle('settings:set', (_event, patch: Partial<AppSettings>) => settingsStore.save(patch))
+
+    // spec-19/F11：自动更新（检查 / 安装，事件经 updater:event 推送）
+    const updateManager = new UpdateManager(() => win)
+    void updateManager.bindEvents()
+    ipcMain.handle('updater:check', () => updateManager.check(app.isPackaged))
+    ipcMain.handle('updater:install', () => updateManager.install())
 
     // spec-13：渲染层"打开目录"与"复制全部"（渲染进程无 shell/clipboard 权限）
     ipcMain.handle('shell:show-item', (_event, target: string) => {

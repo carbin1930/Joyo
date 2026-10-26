@@ -8,11 +8,13 @@ import SchemaTree from '@/components/schema/SchemaTree.vue'
 import LogViewerDialog from '@/components/log/LogViewerDialog.vue'
 import StatusBar from '@/components/status/StatusBar.vue'
 import ToastHost from '@/components/ToastHost.vue'
+import { useSettingsStore } from '@/stores/settings'
 import { zhCN } from '@/locales/zh-CN'
 
 const backend = useBackendStore()
 const connections = useConnectionStore()
 const queryStore = useQueryStore()
+const settings = useSettingsStore()
 const logOpen = ref(false)
 
 /** 日志入口分流：已连接 → 主区"日志"页签；未连接 → 弹窗兜底 */
@@ -24,10 +26,13 @@ function openLogs(): void {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   void backend.check()
   // 菜单"打开后端日志"
   window.joyo?.onOpenLogs(openLogs)
+  // spec-18：启动即加载主题/字号/行数上限
+  await settings.load()
+  queryStore.maxRows = settings.settings.maxRows
 })
 </script>
 

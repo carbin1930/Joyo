@@ -12,6 +12,28 @@
 
   --joyo-text: #24292f;
   --joyo-text-muted: #7a828c;
+  /* spec-18：界面基准字号（设置面板可调，作用于 body 与结果网格） */
+  --joyo-font-size: 13px;
+}
+
+/* spec-18/F10 深色主题：只覆盖变量，不改组件样式分支 */
+:root[data-theme='dark'] {
+  --joyo-bg: #1b1e23;
+  --joyo-bg-card: #23272e;
+  --joyo-bg-sidebar: #191c21;
+  --joyo-border: #363b44;
+  --joyo-text: #d8dce3;
+  --joyo-text-muted: #8b939e;
+}
+
+/* 基准字号：body 与网格跟随设置 */
+html,
+body {
+  font-size: var(--joyo-font-size);
+}
+
+.tabulator {
+  font-size: var(--joyo-font-size);
 }
 
 * {

@@ -4,6 +4,23 @@
 
 import type { MetricsTick } from './api'
 
+/** 全局设置（spec-18，与 desktop/src/main/settings-store.ts 的 AppSettings 一致） */
+export interface AppSettings {
+  theme: 'light' | 'dark'
+  fontSize: number
+  maxRows: number
+  queryTimeoutSec: number
+}
+
+/** 更新状态（spec-19，与 desktop/src/main/updater.ts 的 UpdateState 一致） */
+export interface UpdateState {
+  phase: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error' | 'unsupported'
+  version?: string
+  notes?: string
+  percent?: number
+  message?: string
+}
+
 /** 导出任务（spec-15，与 desktop/src/main/export-runner.ts 的 ExportJob 一致） */
 export interface ExportJob {
   connectionId: string
@@ -114,6 +131,16 @@ declare global {
       copyText(text: string): Promise<void>
       /** spec-14：订阅资源监控推送（Main 每 3s 一帧）；返回取消订阅函数 */
       onMetrics(cb: (tick: MetricsTick) => void): () => void
+      /** spec-18：读取全局设置 */
+      getSettings(): Promise<AppSettings>
+      /** spec-18：合并保存设置（部分更新） */
+      setSettings(patch: Partial<AppSettings>): Promise<AppSettings>
+      /** spec-19：检查更新 */
+      checkUpdate(): Promise<UpdateState>
+      /** spec-19：退出并安装新版本 */
+      installUpdate(): Promise<void>
+      /** spec-19：订阅更新状态推送，返回取消订阅函数 */
+      onUpdateEvent(cb: (state: UpdateState) => void): () => void
       /** spec-15：导出（保存对话框 → Main 拉流写盘） */
       exportRun(job: ExportJob & { defaultFileName: string }): Promise<ExportResult>
       /** 查询历史有新增（spec-05）；返回取消订阅函数 */

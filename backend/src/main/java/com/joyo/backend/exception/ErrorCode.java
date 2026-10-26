@@ -41,7 +41,15 @@ public enum ErrorCode {
     /** 数据变更执行失败，message 为 MySQL 原始错误（一请求一事务，失败整体回滚） */
     MUTATION_FAILED(4102, "数据变更执行失败"),
     /** 主键列不可修改 */
-    PRIMARY_KEY_READONLY(4103, "主键列不可修改");
+    PRIMARY_KEY_READONLY(4103, "主键列不可修改"),
+
+    // ===== 5xxx 表/数据同步（rest-api.md 第 5 节，spec-17） =====
+    /** 表不存在或状态不可比对（compare 用 comparable=false 表达，execute 直接抛） */
+    SYNC_NOT_COMPARABLE(5101, "表不存在或不可比对"),
+    /** 同步执行失败，message 为 MySQL 原始错误（数据部分整体回滚） */
+    SYNC_FAILED(5102, "同步执行失败"),
+    /** 无主键无法按主键比对数据 */
+    SYNC_NO_PRIMARY_KEY(5103, "表无主键，无法按主键比对数据");
 
     private final int code;
     private final String message;

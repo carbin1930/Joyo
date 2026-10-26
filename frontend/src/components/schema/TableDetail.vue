@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useSchemaStore } from '@/stores/schema'
 import { toast } from '@/composables/use-toast'
 import ExportDialog from '@/components/export/ExportDialog.vue'
+import SyncDialog from '@/components/sync/SyncDialog.vue'
 import { zhCN } from '@/locales/zh-CN'
 import type { TableColumn } from '@/types/api'
 
@@ -29,6 +30,15 @@ const exportSource = computed(() => {
     sql: `SELECT * FROM \`${loc.schema}\`.\`${loc.table}\``,
     defaultTable: loc.table,
   }
+})
+
+/** spec-17：同步入口——源为当前表，目标在面板里选 */
+const syncOpen = ref(false)
+const syncSource = computed(() => {
+  const loc = location.value
+  const connectionId = schemaStore.activeConnectionId
+  if (!loc || !connectionId) return null
+  return { connectionId, database: loc.schema, table: loc.table }
 })
 
 function keyLabel(key: string | null): string {
@@ -79,6 +89,15 @@ function columnTypeText(col: TableColumn): string {
       >
         {{ zhCN.export.openData }}
       </button>
+      <!-- spec-17：以当前表为源发起同步 -->
+      <button
+        v-if="syncSource"
+        class="close-btn"
+        data-testid="sync-data-btn"
+        @click="syncOpen = true"
+      >
+        {{ zhCN.sync.open }}
+      </button>
       <button class="close-btn" data-testid="back-to-editor" @click="closeDetail">
         {{ zhCN.schema.detail.backToEditor }}
       </button>
@@ -94,6 +113,7 @@ function columnTypeText(col: TableColumn): string {
 
     <template v-else>
       <ExportDialog :open="exportOpen" :source="exportSource" @close="exportOpen = false" />
+      <SyncDialog :open="syncOpen" :source="syncSource" @close="syncOpen = false" />
       <div class="tabs">
         <button
           class="tab"

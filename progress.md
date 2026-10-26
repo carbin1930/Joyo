@@ -9,6 +9,7 @@
 - 已完成并合入 main：spec-01 连接管理、spec-02 库表浏览、spec-03 SQL 编辑器（含多 SQL 页签/F13 精简日志/Element Plus 第一批替换，提交 `1f68538`）
 - 当前分支：`main`（与 origin/main 同步，工作区干净）
 - 实机验收：spec-03 增强改动已通过（多 SQL 页签正常；"内部错误 1500" 未再复现）
+- **v0.5 / v1.0 代码完成**：spec-17 表/数据同步、spec-18 设置面板、spec-19 自动更新 已实现（均待实机验收）。踩坑：①本机 pnpm 创建符号链接被系统拒绝（os error 5），`electron-updater` 装不上——已写进 desktop/package.json 依赖与 `build.publish` 占位，需在有权限的环境执行 `pnpm install` 补齐，代码侧用运行时动态 import + 缺失降级，因此不会编译失败；②electron-updater 类型因此不静态引用（避免未安装时 TS2307）
 - **v0.4 进行中**：spec-16 表数据编辑已实现（待实机验收）。实现说明：可编辑性后端查询时判定（`ResultSetMetaData.getTableName` 判单表 + `information_schema.COLUMNS` 取主键，主键列须全部出现在结果列、截断结果不可编辑）；`/mutations` 一请求一事务（PreparedStatement 参数绑定、列名白名单、UPDATE/DELETE 影响 0 行视为失败回滚）；前端 `use-result-edit.ts` 纯逻辑（脏标记按全局行号、新增行负数行号、翻页不丢）+ `ResultEditToolbar`/`SaveChangesDialog`；保存成功后重跑当前 SQL 刷新。踩坑：`StatementResult` 增删字段需同步 QueryIT 构造；Mockito 桩不可留未完成 `when(...)`
 - **v0.3**：spec-15 导出已实现（待实机验收）。
 - 工具链踩坑：`pnpm lint` 此前直接崩溃（ESLint flat config 里 `import globals from 'globals'`，但该包从未进 devDependencies），已补 `globals@^15.14.0`；同时关闭 `vue/max-attributes-per-line`、`vue/singleline-html-element-content-newline`（与手写紧凑模板/Prettier 冲突，且 singleline 会给文本节点引入首尾空格）。现在 lint 零告警，可作为质量门禁实现说明：后端 `POST /export` 流式（MySQL 流式游标 fetchSize=Integer.MIN_VALUE；Csv/Insert/Xlsx 三 Writer；POI 5.2.5）；开流前错误走 ApiResponse JSON、Main 按 Content-Type 区分；Main `export-runner.ts` .part→rename 防半成品；前端 `ExportDialog.vue` 两入口（SQL 工具栏重跑导出 + 表详情整表导出）；踩坑记录：List.of 不接受 null、传输层会吞 `&&`（here-string 写文件后需编译校验）

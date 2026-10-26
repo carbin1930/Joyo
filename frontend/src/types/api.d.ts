@@ -131,6 +131,55 @@ export interface MutationResponse {
   applied: number
 }
 
+// ===== 表/数据同步（docs/30-api/rest-api.md 同步节，与后端 SyncModels 一一对应） =====
+
+export interface SyncTableRef {
+  connectionId: string
+  database: string
+  table: string
+}
+
+export interface SyncCompareRequest {
+  source: SyncTableRef
+  target: SyncTableRef
+  rowLimit?: number
+}
+
+/** kind ∈ missing（目标缺）| extra（源缺）| changed（类型/可空不同） */
+export interface ColumnDiff {
+  name: string
+  kind: 'missing' | 'extra' | 'changed'
+  sourceType?: string | null
+  targetType?: string | null
+}
+
+export interface IndexDiff {
+  name: string
+  kind: 'missing' | 'extra' | 'changed'
+  detail?: string | null
+}
+
+export interface DataDiff {
+  insert: number
+  update: number
+  delete: number
+  scanned: number
+  truncated: boolean
+}
+
+export interface SyncCompareResponse {
+  comparable: boolean
+  reason?: string | null
+  columnDiffs: ColumnDiff[]
+  indexDiffs: IndexDiff[]
+  dataDiff: DataDiff
+  statements: string[]
+}
+
+export interface SyncExecuteResponse {
+  applied: number
+}
+
 export interface QueryExecuteResponse {
   statements: StatementResult[]
   elapsedMs: number

@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { MetricsTick } from '../main/metrics-sampler'
 import type { ExportJob } from '../main/export-runner'
+import type { AppSettings } from '../main/settings-store'
+import type { UpdateState } from '../main/updater'
 
 /**
  * Preload：仅通过 contextBridge 暴露白名单 API（overview.md 第 4 节安全模型）。
@@ -29,6 +31,21 @@ contextBridge.exposeInMainWorld('joyo', {
     const listener = (_event: unknown, tick: MetricsTick): void => cb(tick)
     ipcRenderer.on('metrics:tick', listener)
     return () => ipcRenderer.removeListener('metrics:tick', listener)
+  },
+  /** spec-18：读取全局设置（持久化在 Main） */
+  getSettings: (): Promise<AppSettings> => ipcRenderer.invoke('settings:get'),
+  /** spec-18：合并保存设置（部分更新），返回保存后的完整设置 */
+  setSettings: (patch: Partial<AppSettings>): Promise<AppSettings> =>
+    ipcRenderer.invoke('settings:set', patch),
+  /** spec-19：检查更新，返回当前更新状态 */
+  checkUpdate: (): Promise<UpdateState> => ipcRenderer.invoke('updater:check'),
+  /** spec-19：退出并安装已下载的新版本 */
+  installUpdate: (): Promise<void> => ipcRenderer.invoke('updater:install'),
+  /** spec-19：订阅更新状态推送（检查/下载进度/完成/失败），返回取消订阅函数 */
+  onUpdateEvent: (cb: (state: UpdateState) => void): (() => void) => {
+    const listener = (_event: unknown, state: UpdateState): void => cb(state)
+    ipcRenderer.on('updater:event', listener)
+    return () => ipcRenderer.removeListener('updater:event', listener)
   },
   /** spec-15：导出（保存对话框 → Main 拉流写盘）；取消返回 { canceled: true } */
   exportRun: (

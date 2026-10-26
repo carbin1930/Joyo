@@ -234,6 +234,42 @@ X-Joyo-Token: <token>
 - `tableName` 仅 `insert` 必填；`rowLimit` 范围 1-5,000,000，空 = 全部
 - 格式细则见 spec-15 第 3 节（CSV 带 BOM/RFC 4180、INSERT 按 MySQL 默认模式转义、xlsx POI SXSSF）
 
+### POST /sync/compare（spec-17）
+
+跨连接比对两张表的结构与数据，返回差异清单与**预览用**脚本（不执行任何写操作）。
+
+```
+POST /api/v1/sync/compare
+X-Joyo-Token: <token>
+{ "source": { "connectionId": "c1", "database": "db1", "table": "users" },
+  "target": { "connectionId": "c2", "database": "db2", "table": "users" },
+  "rowLimit": 10000 }
+```
+
+响应 data：
+```json
+{
+  "comparable": true,
+  "reason": null,
+  "columnDiffs": [ { "name": "email", "kind": "missing", "sourceType": "varchar(64)", "targetType": null } ],
+  "indexDiffs": [ { "name": "idx_email", "kind": "missing", "detail": "(email)" } ],
+  "dataDiff": { "insert": 3, "update": 2, "delete": 1, "scanned": 10000, "truncated": false },
+  "statements": [ "ALTER TABLE `db2`.`users` ADD COLUMN `email` varchar(64) NULL" ]
+}
+```
+
+- `kind` ∈ `missing`（目标缺）| `extra`（源缺，只提示不 DROP）| `changed`（类型/可空不同）
+- `comparable=false` 时 `reason` 说明原因（表不存在 / 无主键）
+- 数据比对基于主键 + `MD5(CONCAT_WS(...))` 校验和（NULL 归一 `#NULL#`），只回传主键与校验和；比对列为两侧交集
+- `rowLimit` 默认 10000（1-1000000）；达上限时 `truncated=true`
+
+### POST /sync/execute（spec-17）
+
+请求体与 `/sync/compare` **完全相同**：服务端重新比对后执行（**不接受客户端传 SQL**）。响应 data：`{ "applied": 7 }`。
+
+- 顺序：先执行结构 ALTER（MySQL DDL 隐式提交，逐条独立）→ 数据 INSERT/UPDATE/DELETE 在**一个事务**内执行
+- 数据按主键定位、参数化执行；UPDATE/DELETE 影响 0 行视为失败 → 仅回滚数据部分（结构已提交）→ 5102
+
 ### POST /connections/{connectionId}/mutations（spec-16）
 
 表数据编辑：把前端暂存的增删改一次性提交，**一个请求一个事务**（全部成功 commit，任一条失败 rollback）。
@@ -277,6 +313,9 @@ X-Joyo-Token: <token>
 | 4101 | 200 | 结果不可编辑（spec-16） | "该结果不可编辑（需单表且包含主键列）" |
 | 4102 | 200 | 数据变更执行失败（spec-16） | 显示 MySQL 原始错误 |
 | 4103 | 200 | 主键列不可修改（spec-16） | "主键列不可修改" |
+| 5101 | 200 | 表不存在或不可比对（spec-17） | 显示 reason |
+| 5102 | 200 | 同步执行失败（spec-17） | 显示 MySQL 原始错误 |
+| 5103 | 200 | 无主键无法比对数据（spec-17） | "表无主键，无法按主键比对数据" |
 
 错误响应示例：
 ```json
@@ -288,4 +327,4 @@ X-Joyo-Token: <token>
 - 查询历史（spec-05）：**不经过后端**。由 Electron Main 持久化（better-sqlite3），IPC 通道 `history:append` / `history:list` / `history:delete` / `history:clear`（契约见 spec-05 第 3 节）
 - SSH 隧道（spec-06）：连接模型 `sshTunnel` 对象落地；`/connections/test` 与 session 请求体增加可选 `sshTunnel` 字段（JSch fork `com.github.mwiede:jsch:0.2.x`，隧道由后端建立，错误码 2005）
 - `POST /queries/{queryId}/cancel`（查询中断，v0.4）
-- `POST /sync/compare`、`POST /sync/execute`（spec-12 表/数据同步，v0.5）
+- 同步的方向/冲突策略扩展、定时同步（spec-17 扩展点，v0.5+）

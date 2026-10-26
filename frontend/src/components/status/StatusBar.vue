@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useBackendStore } from '@/stores/backend'
+import SettingsDialog from '@/components/settings/SettingsDialog.vue'
 import type { MetricsTick } from '@/types/api'
 import { zhCN } from '@/locales/zh-CN'
 
@@ -13,6 +14,9 @@ import { zhCN } from '@/locales/zh-CN'
 const backend = useBackendStore()
 const tick = ref<MetricsTick | null>(null)
 let unsubscribe: (() => void) | null = null
+
+/** spec-18：设置入口（全局可见） */
+const settingsOpen = ref(false)
 
 onMounted(() => {
   unsubscribe = window.joyo?.onMetrics((t) => {
@@ -71,7 +75,17 @@ const tooltip = computed(() => {
       <span>{{ electronText || '—' }}</span>
       <span class="sb-divider">|</span>
       <span :class="{ muted: jvmMuted }" data-testid="jvm-metrics">{{ jvmText }}</span>
+      <button
+        class="sb-gear"
+        data-testid="open-settings"
+        :title="zhCN.settings.open"
+        @click="settingsOpen = true"
+      >
+        ⚙
+      </button>
     </div>
+
+    <SettingsDialog :open="settingsOpen" @close="settingsOpen = false" />
   </footer>
 </template>
 
@@ -120,5 +134,19 @@ const tooltip = computed(() => {
 
 .muted {
   opacity: 0.55;
+}
+
+.sb-gear {
+  border: none;
+  background: none;
+  padding: 0 2px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--joyo-text-muted);
+}
+
+.sb-gear:hover {
+  color: var(--joyo-primary);
 }
 </style>

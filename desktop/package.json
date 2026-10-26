@@ -11,10 +11,22 @@
     "start": "electron .",
     "test": "vitest run"
   },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "electron": "^33.3.1",
     "typescript": "~5.6.3",
     "vitest": "^3.0.5"
+  },
+  "build": {
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "carbin1930",
+        "repo": "Joyo"
+      }
+    ]
   }
 }
