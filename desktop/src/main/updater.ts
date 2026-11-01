@@ -83,7 +83,9 @@ export class UpdateManager {
 
     this.push({ phase: 'checking' })
     try {
-      const result = (await (autoUpdater.checkForUpdates as () => Promise<unknown>)()) as
+      // 同样必须通过对象调用，保持 this 绑定
+      const api = autoUpdater as { checkForUpdates?: () => Promise<unknown> }
+      const result = (await api.checkForUpdates?.()) as
         | { updateInfo?: { version?: string; releaseNotes?: string | unknown[] } }
         | null
       if (!result) {
@@ -105,22 +107,27 @@ export class UpdateManager {
     return this.state
   }
 
-  /** 注册下载进度与完成事件（在 check 前调用一次即可） */
+  /**
+   * 注册下载进度与完成事件（在 check 前调用一次即可）。
+   * 注意：必须通过 emitter 调用 on（不能把方法取成变量再调用，会丢 this）。
+   */
   async bindEvents(): Promise<void> {
     const autoUpdater = await loadAutoUpdater()
     if (!autoUpdater) return
-    const on = autoUpdater.on as ((event: string, cb: (...args: never[]) => void) => void) | undefined
-    if (typeof on !== 'function') return
+    const emitter = autoUpdater as {
+      on?: (event: string, cb: (...args: never[]) => void) => void
+    }
+    if (typeof emitter.on !== 'function') return
 
-    on('download-progress', (...args: never[]) => {
+    emitter.on('download-progress', (...args: never[]) => {
       const progress = args[0] as { percent?: number }
       this.push({ phase: 'downloading', percent: Math.round(progress.percent ?? 0) }, true)
     })
-    on('update-downloaded', (...args: never[]) => {
+    emitter.on('update-downloaded', (...args: never[]) => {
       const info = args[0] as { version?: string }
       this.push({ phase: 'downloaded', version: asString(info.version) })
     })
-    on('error', (...args: never[]) => {
+    emitter.on('error', (...args: never[]) => {
       const error = args[0] as Error | string | undefined
       this.push({ phase: 'error', message: error instanceof Error ? error.message : String(error ?? '') })
     })
@@ -130,7 +137,7 @@ export class UpdateManager {
   async install(): Promise<void> {
     const autoUpdater = await loadAutoUpdater()
     if (!autoUpdater) return
-    const quitAndInstall = autoUpdater.quitAndInstall as (() => void) | undefined
-    if (typeof quitAndInstall === 'function') quitAndInstall()
+    const api = autoUpdater as { quitAndInstall?: () => void }
+    api.quitAndInstall?.()
   }
 }
