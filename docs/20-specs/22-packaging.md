@@ -31,6 +31,7 @@
 
 | 场景 | 期望表现 |
 |---|---|
+| **打包后白屏** | 根因是 `frontend/vite.config.ts` 缺 `base: './'`：Vite 默认产出 `/assets/xxx.js` 绝对路径，`file://` 加载时会解析到磁盘根目录（`C:\assets\...`）→ 资源 404 → 白屏。**已修**（`base: './'`，产物变为 `./assets/...`）。注意开发模式走 dev server 不会暴露此问题，只有打包版才复现 |
 | 后端 jar 不存在 | 脚本在步骤 3 后即报错中断 |
 | jlink 不可用 | 跳过裁剪，安装包不带内置 JRE |
 | makensis 报"无法创建 __uninstaller.exe" | 多为杀软/索引器占用；清空 `release/` 重跑即可（已实测复现与修复） |

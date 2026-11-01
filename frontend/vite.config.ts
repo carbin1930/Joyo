@@ -3,6 +3,8 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  // 相对路径：打包后主窗用 file:// 加载 index.html，绝对路径 /assets 会指到磁盘根目录导致白屏
+  base: './',
   plugins: [vue()],
   resolve: {
     alias: {
