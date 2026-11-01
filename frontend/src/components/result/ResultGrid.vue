@@ -115,15 +115,90 @@ function pkColumns(): Set<string> {
   return new Set(props.editable?.primaryKey ?? [])
 }
 
-/** 可编辑条件：已解锁 + 非主键列 + 非二进制列 */
+/**
+ * 单元格可编辑判定：
+ * - 必须已解锁、非二进制列
+ * - 主键列：**已有行只读**（改主键会让 UPDATE 定位歧义）；**新增行可填**（自增可留空，非自增/联合主键则需手填）
+ */
+function canEditCell(cell: CellComponent, col: ColumnMeta): boolean {
+  if (props.unlocked !== true || isBinaryType(col.type)) return false
+  const rowIndex = Number(cell.getRow().getData().__idx ?? Number.NaN)
+  const isInsertRow = rowIndex < 0
+  return isInsertRow || !pkColumns().has(col.name)
+}
+
+/** 列默认是否可编辑（用于表头提示与定位首个可编辑列；新增行与已有行都会放行非主键列） */
 function canEdit(col: ColumnMeta): boolean {
-  return props.unlocked === true && !pkColumns().has(col.name) && !isBinaryType(col.type)
+  return props.unlocked === true && !isBinaryType(col.type)
 }
 
 /** 字段名 c{n} → 列定义 */
 function columnOfField(field: string): ColumnMeta | null {
   if (!field || !field.startsWith('c')) return null
   return visibleColumns(props.columns, props.maxColumns)[Number(field.slice(1))] ?? null
+}
+
+/** Tabulator 自定义编辑器签名（本地声明，避免依赖其类型导出细节） */
+type CellEditor = (
+  cell: CellComponent,
+  onRendered: (callback: () => void) => void,
+  success: (value: string | null) => void,
+  cancel: () => void,
+) => HTMLElement
+
+/**
+ * 按列类型选择编辑器（spec-16 补充）：
+ * date / datetime / timestamp / time 用原生日期控件，其余纯文本。
+ * 原生控件值格式与 MySQL 字符串之间做转换（datetime-local 用 T 分隔、可带秒）。
+ */
+function editorForColumn(col: ColumnMeta): CellEditor | 'input' {
+  const type = (col.type ?? '').toLowerCase()
+  const native = (inputType: 'date' | 'datetime-local' | 'time'): CellEditor =>
+    (cell, onRendered, success, cancel) => {
+      const input = document.createElement('input')
+      input.type = inputType
+      input.className = 'joyo-cell-editor'
+      if (inputType === 'datetime-local') input.step = '1'
+      const current = cell.getValue() as string | null
+      if (current) {
+        input.value = inputType === 'datetime-local' ? current.replace(' ', 'T').slice(0, 19) : current
+      }
+      onRendered(() => {
+        input.focus()
+        input.select()
+      })
+      let settled = false
+      const commit = (): void => {
+        if (settled) return
+        settled = true
+        const raw = input.value.trim()
+        if (raw === '') {
+          // 清空 → SQL NULL（与文本列"空串"区分：日期列空串在 MySQL 下非法）
+          success(null)
+          return
+        }
+        success(inputType === 'datetime-local' ? raw.replace('T', ' ') : raw)
+      }
+      input.addEventListener('blur', commit)
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          commit()
+        } else if (event.key === 'Escape') {
+          event.preventDefault()
+          if (!settled) {
+            settled = true
+            cancel()
+          }
+        }
+      })
+      return input
+    }
+
+  if (type === 'date') return native('date')
+  if (type === 'datetime' || type === 'timestamp') return native('datetime-local')
+  if (type === 'time') return native('time')
+  return 'input'
 }
 
 /** 该格是否有未保存改动（用于脏标记底纹） */
@@ -157,9 +232,9 @@ function buildColumns(): ColumnDefinition[] {
       },
       tooltip: (_event: Event, cell: CellComponent) => cellTooltip(cell, col.type),
       // 双击进入编辑态：锁定态仅用于选取文本复制（提交后由 cellEdited 还原原值）；解锁态可提交改动
-      editor: 'input',
+      editor: editorForColumn(col) as ColumnDefinition['editor'],
       selectContents: true,
-      editable: () => canEdit(col),
+      editable: (cell: CellComponent) => canEditCell(cell, col),
     }),
   )
   return [rownum, ...dataColumns]
@@ -384,7 +459,7 @@ onMounted(() => {
   // 解锁态下主键列与二进制列不进入编辑态
   table.on('cellDblClick', (_event: Event, cell: CellComponent) => {
     const col = columnOfField(cell.getField())
-    if (props.unlocked && col && !canEdit(col)) return
+    if (props.unlocked && col && !canEditCell(cell, col)) return
     void cell.edit(true)
   })
   table.on('cellEdited', (cell: CellComponent) => {

@@ -61,7 +61,8 @@ X-Joyo-Token: <token>
 ## 4. 行为细节
 
 1. **可编辑判定**（后端 `EditableResolver`）：单表 + 含全部主键列 → 可编辑；JOIN / 子查询 / 表达式列（`getTableName` 返回空）/ 无主键表 / 缺主键列 / 结果被截断 → `editable = null`。
-2. **主键列只读**：改主键等于删除 + 新增，避免 UPDATE 定位歧义；前端不 enter 编辑态，后端收到主键变更 → 4103。
+2. **主键列按行区分**（2026-11-01 修订）：**已有行的主键只读**（改主键等于删除 + 新增，避免 UPDATE 定位歧义；后端收到主键变更仍 → 4103）；**新增行的主键可填写**——自增主键留空由 MySQL 生成，非自增/联合主键需要手填。表头 `🔒` 标记与 tooltip 说明该限制。
+2.1 **编辑器按列类型**（2026-11-01 补充）：`date` 用日期控件、`datetime`/`timestamp` 用日期时间控件（带秒）、`time` 用时间控件（原生 `<input type="date|datetime-local|time">`，与 MySQL 字符串互转）；清空日期控件写入 SQL NULL（日期列空串在 MySQL 下非法）。其余类型维持文本输入。
 3. **语句在后端生成**，一律 `PreparedStatement` 参数绑定（禁字符串拼接值），标识符经 `SqlIdentifiers.quote` 反引号转义；列名按 `information_schema` 白名单校验，非法列名 → 1001。
 4. **UPDATE 按主键定位**：`UPDATE \`db\`.\`t\` SET \`c\`=? WHERE \`pk\`=?`（不做原值比对，避免 NULL 比较歧义）。
 5. **NULL 语义**：网格 NULL 显示为 `NULL`（沿用 spec-04 样式）；编辑态输入**全大写关键字 `NULL`** 视为 SQL NULL，其余一律字符串（小写 `null`、空串均为字面值）。
