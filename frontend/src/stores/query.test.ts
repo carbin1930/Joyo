@@ -5,9 +5,11 @@ const apiMock = vi.hoisted(() => ({
   executeQuery: vi.fn(),
   getQueryRows: vi.fn(),
   cancelQuery: vi.fn(),
+  applyMutations: vi.fn(),
 }))
 
 vi.mock('@/api/query', () => apiMock)
+vi.mock('@/api/mutations', () => ({ applyMutations: apiMock.applyMutations }))
 
 import { useQueryStore } from './query'
 
@@ -226,6 +228,58 @@ describe('query store（多 SQL 页签）', () => {
         errorMessage: null,
       })
       expect(String(appended[0].executedAt)).toBeTruthy()
+    } finally {
+      clearHistoryStub()
+    }
+  })
+
+  it('saveEdits：保存网格改动记录 EDIT 历史（含生成语句）', async () => {
+    const appended: Array<Record<string, unknown>> = []
+    stubHistoryCapture(appended)
+    try {
+      const store = useQueryStore()
+      const tab = store.ensureTabFor('conn-1', 'joyo')
+      apiMock.executeQuery.mockResolvedValue({
+        statements: [
+          {
+            ...selectResult(1, 2),
+            columns: [
+              { name: 'id', type: 'INT', nullable: false },
+              { name: 'name', type: 'VARCHAR', nullable: true },
+            ],
+            rows: [
+              ['1', 'a'],
+              ['2', 'b'],
+            ],
+            editable: { schema: 'joyo', table: 'user', primaryKey: ['id'] },
+          },
+        ],
+        elapsedMs: 3,
+      })
+      await store.execute(tab.id, 'SELECT * FROM user')
+
+      const resultTab = store.resultsByTab[tab.id][0]
+      store.recordCell(resultTab.id, {
+        rowIndex: 0,
+        column: 'name',
+        value: 'bob',
+        original: 'a',
+        pk: { id: '1' },
+      })
+      apiMock.applyMutations.mockResolvedValue({ applied: 1 })
+
+      await store.saveEdits(resultTab.id)
+      await flushAsync()
+
+      const editEntries = appended.filter((e) => e.kind === 'EDIT')
+      expect(editEntries).toHaveLength(1)
+      expect(String(editEntries[0].sql)).toContain('UPDATE')
+      expect(editEntries[0]).toMatchObject({
+        success: true,
+        rowCount: 1,
+        database: 'joyo',
+        errorMessage: null,
+      })
     } finally {
       clearHistoryStub()
     }

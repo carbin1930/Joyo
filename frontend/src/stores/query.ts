@@ -8,6 +8,7 @@ import {
   createState,
   discard,
   markDeleted,
+  previewStatements,
   setCell,
   type EditState,
 } from '@/composables/use-result-edit'
@@ -386,17 +387,44 @@ export const useQueryStore = defineStore('query', {
         return
       }
 
+      // 编辑保存也进查询历史（spec-05 补充）：记录将执行的语句原文，便于回溯改了什么
+      const sqlText = previewStatements(this.editStateOf(resultTabId), stmt.editable).join(';\n') + ';'
+      const connectionName =
+        useConnectionStore().items.find((c) => c.id === owner.connectionId)?.name ?? ''
+      const started = Date.now()
+
       this.savingEdit = true
       try {
         const resp = await applyMutations(owner.connectionId, payload)
         toast('success', zhCN.edit.saved(resp.applied))
+        void appendHistory({
+          sql: sqlText,
+          connectionName,
+          database: owner.db,
+          kind: 'EDIT',
+          elapsedMs: Date.now() - started,
+          rowCount: resp.applied,
+          success: true,
+          errorMessage: null,
+        })
         const state = this.editStateOf(resultTabId)
         discard(state)
         state.unlocked = false
         await this.execute(owner.id, this.drafts[owner.id] ?? '')
       } catch (e) {
         // 失败保留改动（后端已整体回滚），用户可修正后重试
-        toast('error', e instanceof Error ? e.message : String(e))
+        const message = e instanceof Error ? e.message : String(e)
+        void appendHistory({
+          sql: sqlText,
+          connectionName,
+          database: owner.db,
+          kind: 'EDIT',
+          elapsedMs: Date.now() - started,
+          rowCount: null,
+          success: false,
+          errorMessage: message,
+        })
+        toast('error', message)
       } finally {
         this.savingEdit = false
       }
