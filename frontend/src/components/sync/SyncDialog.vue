@@ -4,6 +4,7 @@ import BaseDialog from '@/components/base/BaseDialog.vue'
 import { compareTables, executeSync } from '@/api/sync'
 import { getSchemas, getTables } from '@/api/metadata'
 import { useConnectionStore } from '@/stores/connection'
+import { recordHistory } from '@/composables/use-history'
 import { toast } from '@/composables/use-toast'
 import type { ColumnDiff, SyncCompareResponse, SyncTableRef } from '@/types/api'
 import { zhCN } from '@/locales/zh-CN'
@@ -106,6 +107,9 @@ async function compare(): Promise<void> {
     toast('error', zhCN.sync.noTarget)
     return
   }
+  const started = Date.now()
+  const connectionName =
+    connections.items.find((c) => c.id === source.connectionId)?.name ?? ''
   comparing.value = true
   try {
     result.value = await compareTables({
@@ -117,9 +121,35 @@ async function compare(): Promise<void> {
       },
       rowLimit: rowLimit.value,
     })
+    // spec-05：比对会执行结构与校验和查询，记录留痕
+    const data = result.value.dataDiff
+    void recordHistory({
+      sql: [
+        `-- 同步比对：源 ${source.database}.${source.table} → 目标 ${targetSchema.value}.${targetTable.value}`,
+        `-- 扫描 ${data.scanned} 行：新增 ${data.insert} / 修改 ${data.update} / 删除 ${data.delete}${data.truncated ? '（已截断）' : ''}`,
+      ].join('\n'),
+      connectionName,
+      database: source.database,
+      kind: 'SYNC_COMPARE',
+      elapsedMs: Date.now() - started,
+      rowCount: data.scanned,
+      success: true,
+      errorMessage: null,
+    })
   } catch (e) {
     result.value = null
-    toast('error', e instanceof Error ? e.message : String(e))
+    const message = e instanceof Error ? e.message : String(e)
+    void recordHistory({
+      sql: `-- 同步比对：源 ${source.database}.${source.table} → 目标 ${targetSchema.value}.${targetTable.value}`,
+      connectionName,
+      database: source.database,
+      kind: 'SYNC_COMPARE',
+      elapsedMs: Date.now() - started,
+      rowCount: null,
+      success: false,
+      errorMessage: message,
+    })
+    toast('error', message)
   } finally {
     comparing.value = false
   }
@@ -128,6 +158,13 @@ async function compare(): Promise<void> {
 async function execute(): Promise<void> {
   const source = props.source
   if (!source) return
+  const started = Date.now()
+  const connectionName =
+    connections.items.find((c) => c.id === source.connectionId)?.name ?? ''
+  // 记录本次将执行的语句（结构 DDL + 数据操作摘要，来自 compare 结果）
+  const sql = result.value?.statements.length
+    ? result.value.statements.join('\n')
+    : `-- 同步执行：${source.database}.${source.table} → ${targetSchema.value}.${targetTable.value}`
   executing.value = true
   try {
     const resp = await executeSync({
@@ -139,10 +176,31 @@ async function execute(): Promise<void> {
       },
       rowLimit: rowLimit.value,
     })
+    void recordHistory({
+      sql,
+      connectionName,
+      database: source.database,
+      kind: 'SYNC',
+      elapsedMs: Date.now() - started,
+      rowCount: resp.applied,
+      success: true,
+      errorMessage: null,
+    })
     toast('success', zhCN.sync.done(resp.applied))
     emit('close')
   } catch (e) {
-    toast('error', e instanceof Error ? e.message : String(e))
+    const message = e instanceof Error ? e.message : String(e)
+    void recordHistory({
+      sql,
+      connectionName,
+      database: source.database,
+      kind: 'SYNC',
+      elapsedMs: Date.now() - started,
+      rowCount: null,
+      success: false,
+      errorMessage: message,
+    })
+    toast('error', message)
   } finally {
     executing.value = false
   }

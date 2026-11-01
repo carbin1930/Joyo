@@ -12,8 +12,8 @@ import {
   setCell,
   type EditState,
 } from '@/composables/use-result-edit'
+import { recordHistory as appendHistory } from '@/composables/use-history'
 import type { StatementResult } from '@/types/api'
-import type { HistoryEntryInput } from '@/types/ipc'
 import { zhCN } from '@/locales/zh-CN'
 import { useConnectionStore } from '@/stores/connection'
 
@@ -57,18 +57,7 @@ function toTab(s: StatementResult, total: number): ResultTab {
   return { id: nextResultId(), ordinal: s.ordinal, kind: s.kind, title, statement: s }
 }
 
-/** spec-05：执行结束后记录查询历史（成功与失败都记；失败静默不影响查询） */
-async function appendHistory(entry: Omit<HistoryEntryInput, 'executedAt'>): Promise<void> {
-  try {
-    // node 单测环境无 window，用 globalThis 属性访问避免未声明引用错误
-    await globalThis.window?.joyo?.history?.append({
-      ...entry,
-      executedAt: new Date().toISOString(),
-    })
-  } catch (e) {
-    console.warn('[query] 记录查询历史失败', e)
-  }
-}
+/** spec-05：执行结束后记录查询历史（统一实现见 composables/use-history） */
 
 /** 单条 SELECT 记 totalRows，其余（多语句/DML/失败）不记行数 */
 function historyRowCount(stmts: StatementResult[]): number | null {

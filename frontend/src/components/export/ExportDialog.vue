@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import BaseDialog from '@/components/base/BaseDialog.vue'
+import { recordHistory } from '@/composables/use-history'
+import { useConnectionStore } from '@/stores/connection'
 import { toast } from '@/composables/use-toast'
 import { zhCN } from '@/locales/zh-CN'
 
@@ -57,6 +59,11 @@ async function doExport(): Promise<void> {
     toast('error', zhCN.export.tableNameRequired)
     return
   }
+  const started = Date.now()
+  // 先取出快照：TS 的类型收窄不会进入下面的回调
+  const source = props.source
+  const connectionName =
+    useConnectionStore().items.find((c) => c.id === source.connectionId)?.name ?? ''
   exporting.value = true
   try {
     const base = format.value === 'insert' ? tableName.value.trim() : 'query-result'
@@ -69,13 +76,36 @@ async function doExport(): Promise<void> {
       rowLimit: rowLimit.value ?? undefined,
       defaultFileName: `${base}-${timestamp()}.${ext.value}`,
     })
+    // 用户取消保存对话框不算执行 SQL，不记历史
     if (!result || result.canceled) return
     toast('success', `${zhCN.export.done}（${formatBytes(result.bytes)}）`)
+    // spec-05：导出会在服务端重跑一次 SQL，必须留痕
+    void recordHistory({
+      sql: props.source.sql,
+      connectionName,
+      database: props.source.database ?? '',
+      kind: 'EXPORT',
+      elapsedMs: Date.now() - started,
+      rowCount: null,
+      success: true,
+      errorMessage: null,
+    })
     emit('close')
   } catch (e) {
     // Electron invoke 的错误带通道前缀，清理后展示
     const message = e instanceof Error ? e.message : String(e)
-    toast('error', message.replace(/^Error invoking remote method 'export:run':\s*(Error:\s*)?/, ''))
+    const clean = message.replace(/^Error invoking remote method 'export:run':\s*(Error:\s*)?/, '')
+    void recordHistory({
+      sql: props.source.sql,
+      connectionName,
+      database: props.source.database ?? '',
+      kind: 'EXPORT',
+      elapsedMs: Date.now() - started,
+      rowCount: null,
+      success: false,
+      errorMessage: clean,
+    })
+    toast('error', clean)
   } finally {
     exporting.value = false
   }

@@ -53,6 +53,20 @@ interface HistoryItem extends HistoryEntry { id: number }
 3. **上限**：append 后若总行数 > 1000，按 id 升序删除最旧直至 1000。
 4. **搜索**：`sql LIKE '%keyword%'`，大小写不敏感（SQLite `LIKE` 默认对 ASCII 不敏感，足够 v0.2）。
 5. **回填**：替换 Monaco 全部内容，不自动执行。
+6. **记录范围**（2026-11-01 补充，原则：**页面上任何会执行 SQL 的操作都要留痕**）：
+
+| 操作 | kind | 记录的 sql |
+|---|---|---|
+| 编辑器执行 SQL | `SELECT` / `UPDATE` / `DDL`（多语句 `MULTI`） | 用户输入的 SQL |
+| 编辑器执行失败 | `ERROR` | 用户输入的 SQL + 错误信息 |
+| 结果网格编辑保存（spec-16） | `EDIT` | 生成的 INSERT/UPDATE/DELETE（带参数值） |
+| 导出（spec-15，含整表导出） | `EXPORT` | 导出用的 SELECT（用户取消保存对话框不记） |
+| 表/数据同步-比对（spec-17） | `SYNC_COMPARE` | 比对摘要（源/目标、扫描行数、增改删计数） |
+| 表/数据同步-执行（spec-17） | `SYNC` | 结构 DDL + 数据操作摘要 |
+
+   - 失败同样记录，`success: false` + `errorMessage`
+   - **有意不记录**：元数据浏览（库/表/列/索引/DDL 的 information_schema 查询，属工具内部读）、结果翻页（走缓存）、连接测试/会话建立（非用户 SQL）；若需要全量审计可另开开关
+   - 统一实现：`frontend/src/composables/use-history.ts` 的 `recordHistory()`，新功能只要执行 SQL 就必须调用它
 
 ## 5. 边界情况
 
