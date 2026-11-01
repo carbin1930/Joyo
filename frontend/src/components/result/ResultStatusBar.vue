@@ -71,18 +71,23 @@ function changePageSize(size: number): void {
 .meta-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 4px;
-  font-size: 12px;
+  gap: var(--joyo-space-3);
+  padding: 0 var(--joyo-space-3);
+  height: 28px;
+  font-size: var(--joyo-fs-sm);
   color: var(--joyo-text-muted);
+  border-bottom: 1px solid var(--joyo-border);
+  background: var(--joyo-bg-card);
   flex: none;
 }
 
 .truncated-badge {
   color: var(--joyo-warning);
-  border: 1px solid var(--joyo-warning);
-  border-radius: 4px;
-  padding: 1px 6px;
+  background: rgb(226 160 63 / 12%);
+  border: 1px solid rgb(226 160 63 / 45%);
+  border-radius: var(--joyo-radius-sm);
+  padding: 0 6px;
+  line-height: 16px;
 }
 
 .spacer {
@@ -101,11 +106,24 @@ function changePageSize(size: number): void {
 }
 
 .page-btn {
+  height: var(--joyo-h-control-sm);
+  min-width: 26px;
   border: 1px solid var(--joyo-border);
   background: var(--joyo-bg-card);
-  border-radius: 4px;
+  color: var(--joyo-text);
+  border-radius: var(--joyo-radius-sm);
   cursor: pointer;
-  padding: 2px 8px;
+  padding: 0 6px;
+  font-size: var(--joyo-fs-sm);
+  transition:
+    background-color var(--joyo-transition),
+    border-color var(--joyo-transition);
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: var(--joyo-primary);
+  color: var(--joyo-primary);
+  background: var(--joyo-primary-weak);
 }
 
 .page-btn:disabled {

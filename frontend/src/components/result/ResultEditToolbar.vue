@@ -88,19 +88,19 @@ const changeText = computed(() =>
 .edit-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--joyo-space-2);
   height: 32px;
   flex-shrink: 0;
-  padding: 0 8px;
+  padding: 0 var(--joyo-space-3);
   border-bottom: 1px solid var(--joyo-border);
-  background: var(--joyo-bg-subtle, #f7f8fa);
-  font-size: 12px;
+  background: var(--joyo-bg-sidebar);
+  font-size: var(--joyo-fs-sm);
 }
 
 .edit-status {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--joyo-space-1);
   color: var(--joyo-text-muted);
 }
 
@@ -110,20 +110,26 @@ const changeText = computed(() =>
 }
 
 .lock-icon {
-  font-size: 11px;
-  transition: transform 150ms ease;
+  font-size: var(--joyo-fs-xs);
+  transition: transform var(--joyo-transition);
 }
 
 .change-badge {
-  padding: 1px 6px;
+  padding: 0 6px;
+  line-height: 16px;
   border-radius: 8px;
-  background: #fdf3d8;
+  background: rgb(226 160 63 / 14%);
   color: #8a6100;
-  font-size: 11px;
+  font-size: var(--joyo-fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme='dark'] .change-badge {
+  color: var(--joyo-warning);
 }
 
 .edit-hint {
-  color: var(--joyo-text-muted);
+  color: var(--joyo-text-subtle);
 }
 
 .spacer {

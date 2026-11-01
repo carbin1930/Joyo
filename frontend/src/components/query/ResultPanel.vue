@@ -269,32 +269,45 @@ function totalPages(tab: ResultTab): number {
 }
 
 .panel-empty {
-  color: var(--joyo-text-muted);
-  padding: 24px 0;
+  color: var(--joyo-text-subtle);
+  padding: 32px 0;
   text-align: center;
-  font-size: 13px;
+  font-size: var(--joyo-fs-md);
 }
 
 .result-tabs {
   display: flex;
-  gap: 4px;
+  gap: 2px;
+  height: var(--joyo-h-tab);
+  padding: 0 var(--joyo-space-2);
   border-bottom: 1px solid var(--joyo-border);
+  background: var(--joyo-bg-card);
   flex-shrink: 0;
 }
 
 .result-tab {
   border: none;
   background: none;
-  padding: 7px 12px;
-  font-size: 12px;
+  height: 100%;
+  padding: 0 10px;
+  font-size: var(--joyo-fs-sm);
   cursor: pointer;
   color: var(--joyo-text-muted);
   border-bottom: 2px solid transparent;
+  transition:
+    background-color var(--joyo-transition),
+    color var(--joyo-transition);
+}
+
+.result-tab:hover {
+  background: var(--joyo-bg-hover);
+  color: var(--joyo-text);
 }
 
 .result-tab.active {
   color: var(--joyo-primary);
   border-bottom-color: var(--joyo-primary);
+  font-weight: 600;
 }
 
 .tab-error {
@@ -309,13 +322,16 @@ function totalPages(tab: ResultTab): number {
 }
 
 .error-block {
-  margin: 12px;
-  padding: 12px 14px;
+  margin: var(--joyo-space-3);
+  padding: var(--joyo-space-3);
   border: 1px solid var(--joyo-danger);
-  border-radius: 8px;
+  border-left-width: 3px;
+  border-radius: var(--joyo-radius);
+  background: rgb(214 69 69 / 6%);
   color: var(--joyo-danger);
   font-family: Consolas, monospace;
-  font-size: 12px;
+  font-size: var(--joyo-fs-sm);
+  line-height: 1.6;
   white-space: pre-wrap;
 }
 
@@ -326,12 +342,14 @@ function totalPages(tab: ResultTab): number {
 }
 
 .msg-block {
-  margin: 12px;
-  padding: 12px 14px;
+  margin: var(--joyo-space-3);
+  padding: var(--joyo-space-3);
   border: 1px solid var(--joyo-success);
-  border-radius: 8px;
+  border-left-width: 3px;
+  border-radius: var(--joyo-radius);
+  background: rgb(34 160 107 / 6%);
   color: var(--joyo-success);
-  font-size: 13px;
+  font-size: var(--joyo-fs-md);
 }
 
 

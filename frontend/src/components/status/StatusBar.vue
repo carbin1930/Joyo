@@ -91,16 +91,17 @@ const tooltip = computed(() => {
 
 <style scoped>
 .status-bar {
-  height: 24px;
+  height: 26px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding: 0 var(--joyo-space-3);
   border-top: 1px solid var(--joyo-border);
   background: var(--joyo-bg-sidebar);
-  font-size: 11px;
+  font-size: var(--joyo-fs-xs);
   color: var(--joyo-text-muted);
+  font-variant-numeric: tabular-nums;
   user-select: none;
 }
 

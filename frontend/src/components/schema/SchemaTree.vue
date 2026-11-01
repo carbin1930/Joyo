@@ -219,35 +219,55 @@ function isSelected(schema: string, table: string): boolean {
 }
 
 .tree-title {
-  font-size: 12px;
+  font-size: var(--joyo-fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
   color: var(--joyo-text-muted);
 }
 
 .refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
   border: none;
   background: none;
   cursor: pointer;
   color: var(--joyo-text-muted);
-  font-size: 13px;
-  padding: 2px 6px;
-  border-radius: 4px;
+  font-size: var(--joyo-fs-md);
+  border-radius: var(--joyo-radius-sm);
+  transition:
+    background-color var(--joyo-transition),
+    color var(--joyo-transition);
 }
 
 .refresh-btn:hover {
-  background: var(--joyo-bg-card);
+  background: var(--joyo-bg-hover);
   color: var(--joyo-primary);
 }
 
 .filter-input {
-  padding: 6px 10px;
+  height: var(--joyo-h-control);
+  padding: 0 10px;
   border: 1px solid var(--joyo-border);
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: var(--joyo-radius);
+  background: var(--joyo-bg-card);
+  font-size: var(--joyo-fs-sm);
+  color: var(--joyo-text);
   outline: none;
+  transition:
+    border-color var(--joyo-transition),
+    box-shadow var(--joyo-transition);
+}
+
+.filter-input::placeholder {
+  color: var(--joyo-text-subtle);
 }
 
 .filter-input:focus {
   border-color: var(--joyo-primary);
+  box-shadow: 0 0 0 2px var(--joyo-primary-weak);
 }
 
 .tree-empty {
@@ -268,15 +288,17 @@ function isSelected(schema: string, table: string): boolean {
 .node-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 6px;
-  border-radius: 5px;
+  gap: var(--joyo-space-1);
+  min-height: 26px;
+  padding: 2px 6px;
+  border-radius: var(--joyo-radius-sm);
   cursor: pointer;
   user-select: none;
+  transition: background-color var(--joyo-transition);
 }
 
 .node-row:hover {
-  background: var(--joyo-bg-card);
+  background: var(--joyo-bg-hover);
 }
 
 .node-row.current .node-name {
@@ -284,9 +306,15 @@ function isSelected(schema: string, table: string): boolean {
   font-weight: 600;
 }
 
+/* 选中：主色弱底 + 左侧 2px 主色条（与连接列表一致） */
 .node-row.selected {
-  background: var(--joyo-bg-card);
-  outline: 1px solid var(--joyo-primary);
+  background: var(--joyo-primary-weak);
+  box-shadow: inset 2px 0 0 var(--joyo-primary);
+}
+
+.node-row.selected .node-name {
+  color: var(--joyo-primary);
+  font-weight: 600;
 }
 
 .arrow {
@@ -297,7 +325,7 @@ function isSelected(schema: string, table: string): boolean {
 }
 
 .node-name {
-  font-size: 13px;
+  font-size: var(--joyo-fs-md);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -305,8 +333,9 @@ function isSelected(schema: string, table: string): boolean {
 
 .rows {
   margin-left: auto;
-  font-size: 11px;
-  color: var(--joyo-text-muted);
+  font-size: var(--joyo-fs-xs);
+  color: var(--joyo-text-subtle);
+  font-variant-numeric: tabular-nums;
 }
 
 .type-badge {
@@ -339,9 +368,10 @@ function isSelected(schema: string, table: string): boolean {
 .column-row {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  padding: 2px 6px;
-  font-size: 12px;
+  gap: var(--joyo-space-2);
+  padding: 1px 6px;
+  font-size: var(--joyo-fs-sm);
+  color: var(--joyo-text-muted);
 }
 
 .col-name {

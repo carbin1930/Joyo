@@ -343,21 +343,33 @@ function closeTab(e: MouseEvent, id: string): void {
   display: flex;
   align-items: center;
   gap: 2px;
+  height: var(--joyo-h-tab);
+  padding: 0 var(--joyo-space-2);
   border-bottom: 1px solid var(--joyo-border);
+  background: var(--joyo-bg-sidebar);
   flex-shrink: 0;
 }
 
 .main-tab {
   border: none;
   background: none;
-  padding: 7px 12px;
-  font-size: 12px;
+  height: 100%;
+  padding: 0 10px;
+  font-size: var(--joyo-fs-sm);
   cursor: pointer;
   color: var(--joyo-text-muted);
   border-bottom: 2px solid transparent;
   display: flex;
   align-items: center;
   gap: 6px;
+  transition:
+    background-color var(--joyo-transition),
+    color var(--joyo-transition);
+}
+
+.main-tab:hover {
+  background: var(--joyo-bg-hover);
+  color: var(--joyo-text);
 }
 
 .main-tab.active {
@@ -373,26 +385,41 @@ function closeTab(e: MouseEvent, id: string): void {
 .tab-db-tag {
   font-size: 10px;
   color: var(--joyo-text-muted);
+  background: var(--joyo-bg-sidebar);
   border: 1px solid var(--joyo-border);
   border-radius: 3px;
   padding: 0 4px;
+  line-height: 14px;
 }
 
 .tab-close {
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: var(--joyo-fs-sm);
   line-height: 1;
-  color: var(--joyo-text-muted);
+  color: var(--joyo-text-subtle);
   border-radius: 3px;
-  padding: 0 2px;
+  transition:
+    background-color var(--joyo-transition),
+    color var(--joyo-transition);
 }
 
 .tab-close:hover {
   color: var(--joyo-danger);
+  background: rgb(214 69 69 / 12%);
 }
 
 .tab-add {
-  font-size: 14px;
-  padding: 6px 10px;
+  font-size: var(--joyo-fs-lg);
+  padding: 0 8px;
+  border-bottom-color: transparent;
+}
+
+.tab-add:hover {
+  color: var(--joyo-primary);
 }
 
 .spacer {
@@ -408,14 +435,19 @@ function closeTab(e: MouseEvent, id: string): void {
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding-top: 8px;
+  gap: var(--joyo-space-2);
+  height: var(--joyo-h-toolbar);
+  padding: 0 var(--joyo-space-3);
+  border-bottom: 1px solid var(--joyo-border);
+  background: var(--joyo-bg-card);
+  flex-shrink: 0;
 }
 
 .conn-name {
   color: var(--joyo-text);
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--joyo-fs-md);
+  padding-right: var(--joyo-space-1);
 }
 
 .db-select {
@@ -448,12 +480,12 @@ function closeTab(e: MouseEvent, id: string): void {
 }
 
 .toolbar-hint {
-  font-size: 11px;
-  color: var(--joyo-text-muted);
+  font-size: var(--joyo-fs-xs);
+  color: var(--joyo-text-subtle);
 }
 
 .max-rows {
-  font-size: 12px;
+  font-size: var(--joyo-fs-sm);
   color: var(--joyo-text-muted);
   display: flex;
   align-items: center;
@@ -477,7 +509,7 @@ function closeTab(e: MouseEvent, id: string): void {
   position: relative;
   flex: none;
   min-height: 0;
-  padding-top: 8px;
+  padding-top: var(--joyo-space-1);
 }
 
 .splitter {
@@ -507,10 +539,10 @@ function closeTab(e: MouseEvent, id: string): void {
 .status-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 12px;
-  color: var(--joyo-text-muted);
-  padding: 2px 4px;
+  gap: var(--joyo-space-3);
+  font-size: var(--joyo-fs-xs);
+  color: var(--joyo-text-subtle);
+  padding: 2px var(--joyo-space-3);
 }
 
 .db-hint {
@@ -522,29 +554,42 @@ function closeTab(e: MouseEvent, id: string): void {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding-top: 4px;
+  border-top: 1px solid var(--joyo-border);
 }
 
 .bottom-tabs {
   display: flex;
-  gap: 4px;
+  gap: 2px;
+  height: var(--joyo-h-tab);
+  padding: 0 var(--joyo-space-2);
   border-bottom: 1px solid var(--joyo-border);
+  background: var(--joyo-bg-card);
   flex-shrink: 0;
 }
 
 .bottom-tab {
   border: none;
   background: none;
-  padding: 6px 12px;
-  font-size: 12px;
+  height: 100%;
+  padding: 0 10px;
+  font-size: var(--joyo-fs-sm);
   cursor: pointer;
   color: var(--joyo-text-muted);
   border-bottom: 2px solid transparent;
+  transition:
+    background-color var(--joyo-transition),
+    color var(--joyo-transition);
+}
+
+.bottom-tab:hover {
+  background: var(--joyo-bg-hover);
+  color: var(--joyo-text);
 }
 
 .bottom-tab.active {
   color: var(--joyo-primary);
   border-bottom-color: var(--joyo-primary);
+  font-weight: 600;
 }
 
 .bottom-content {
@@ -555,9 +600,9 @@ function closeTab(e: MouseEvent, id: string): void {
 }
 
 .no-tabs-hint {
-  color: var(--joyo-text-muted);
+  color: var(--joyo-text-subtle);
   text-align: center;
   padding: 48px 0;
-  font-size: 13px;
+  font-size: var(--joyo-fs-md);
 }
 </style>

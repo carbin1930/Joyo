@@ -179,17 +179,23 @@ onUnmounted(() => {
 }
 
 .add-btn {
-  padding: 8px;
-  border: 1px dashed var(--joyo-border);
-  border-radius: 6px;
-  background: none;
+  height: var(--joyo-h-control);
+  padding: 0 10px;
+  border: 1px solid var(--joyo-border);
+  border-radius: var(--joyo-radius);
+  background: var(--joyo-bg-card);
   cursor: pointer;
   color: var(--joyo-primary);
-  font-size: 13px;
+  font-size: var(--joyo-fs-md);
+  font-weight: 500;
+  transition:
+    background-color var(--joyo-transition),
+    border-color var(--joyo-transition);
 }
 
 .add-btn:hover {
   border-color: var(--joyo-primary);
+  background: var(--joyo-primary-weak);
 }
 
 .list {
@@ -202,20 +208,22 @@ onUnmounted(() => {
 .conn-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border-radius: 6px;
+  gap: var(--joyo-space-2);
+  padding: 6px 8px;
+  border-radius: var(--joyo-radius);
   cursor: pointer;
   user-select: none;
+  transition: background-color var(--joyo-transition);
 }
 
 .conn-item:hover {
-  background: var(--joyo-bg-card);
+  background: var(--joyo-bg-hover);
 }
 
+/* 选中：主色弱底 + 左侧 2px 主色条（与对象树选中态统一） */
 .conn-item.selected {
-  background: var(--joyo-bg-card);
-  outline: 1px solid var(--joyo-primary);
+  background: var(--joyo-primary-weak);
+  box-shadow: inset 2px 0 0 var(--joyo-primary);
 }
 
 .dot {
@@ -241,15 +249,17 @@ onUnmounted(() => {
 }
 
 .name {
-  font-size: 13px;
+  font-size: var(--joyo-fs-md);
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .summary {
-  font-size: 11px;
+  font-size: var(--joyo-fs-xs);
   color: var(--joyo-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .empty {
@@ -262,28 +272,30 @@ onUnmounted(() => {
 .ctx-menu {
   position: fixed;
   z-index: 600;
-  background: var(--joyo-bg-card);
+  background: var(--joyo-bg-elevated);
   border: 1px solid var(--joyo-border);
-  border-radius: 8px;
-  box-shadow: 0 6px 20px rgb(0 0 0 / 15%);
-  padding: 4px;
+  border-radius: var(--joyo-radius);
+  box-shadow: var(--joyo-shadow-2);
+  padding: var(--joyo-space-1);
   display: flex;
   flex-direction: column;
-  min-width: 120px;
+  min-width: 132px;
 }
 
 .ctx-item {
   border: none;
   background: none;
   text-align: left;
-  padding: 7px 12px;
-  font-size: 13px;
-  border-radius: 5px;
+  padding: 6px 10px;
+  font-size: var(--joyo-fs-md);
+  border-radius: var(--joyo-radius-sm);
   cursor: pointer;
+  color: var(--joyo-text);
+  transition: background-color var(--joyo-transition);
 }
 
 .ctx-item:hover {
-  background: var(--joyo-bg-sidebar);
+  background: var(--joyo-bg-hover);
 }
 
 .ctx-item.danger {
@@ -301,15 +313,18 @@ onUnmounted(() => {
 }
 
 .confirm-panel {
-  background: var(--joyo-bg-card);
-  border-radius: 10px;
-  padding: 20px;
+  background: var(--joyo-bg-elevated);
+  border: 1px solid var(--joyo-border);
+  border-radius: var(--joyo-radius-lg);
+  box-shadow: var(--joyo-shadow-2);
+  padding: var(--joyo-space-4);
   width: 360px;
 }
 
 .confirm-text {
-  margin: 0 0 16px;
-  font-size: 13px;
+  margin: 0 0 var(--joyo-space-3);
+  font-size: var(--joyo-fs-md);
+  color: var(--joyo-text);
 }
 
 .confirm-actions {
@@ -319,17 +334,32 @@ onUnmounted(() => {
 }
 
 .btn {
-  padding: 6px 14px;
+  height: var(--joyo-h-control);
+  padding: 0 12px;
   border: 1px solid var(--joyo-border);
-  border-radius: 6px;
-  background: none;
+  border-radius: var(--joyo-radius);
+  background: var(--joyo-bg-card);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--joyo-fs-md);
+  color: var(--joyo-text);
+  transition:
+    background-color var(--joyo-transition),
+    border-color var(--joyo-transition);
+}
+
+.btn:hover {
+  border-color: var(--joyo-border-strong);
+  background: var(--joyo-bg-hover);
 }
 
 .btn-danger {
   background: var(--joyo-danger);
   border-color: var(--joyo-danger);
   color: #fff;
+}
+
+.btn-danger:hover {
+  background: #c23b3b;
+  border-color: #c23b3b;
 }
 </style>

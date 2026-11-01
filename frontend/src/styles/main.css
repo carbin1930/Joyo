@@ -1,29 +1,80 @@
-/* 主题 CSS 变量（coding-frontend.md 第 1 节），v1.0 深色主题在此扩展 */
+/* ===== 设计令牌（2026-11-01 统一样式基线）：颜色 / 尺寸 / 层级 / 动效 ===== */
 :root {
+  /* 品牌与语义色 */
   --joyo-primary: #2f6fed;
+  --joyo-primary-hover: #245bd0;
+  --joyo-primary-weak: rgb(47 111 237 / 10%);
+  --joyo-primary-weak-strong: rgb(47 111 237 / 16%);
   --joyo-success: #22a06b;
   --joyo-danger: #d64545;
   --joyo-warning: #e2a03f;
 
-  --joyo-bg: #f7f8fa;
+  /* 背景层级：页面 < 侧栏 < 卡片 < 悬浮 */
+  --joyo-bg: #f5f7fa;
   --joyo-bg-card: #ffffff;
   --joyo-bg-sidebar: #f0f2f5;
-  --joyo-border: #d8dce3;
+  --joyo-bg-hover: #eef1f6;
+  --joyo-bg-elevated: #ffffff;
 
-  --joyo-text: #24292f;
-  --joyo-text-muted: #7a828c;
-  /* spec-18：界面基准字号（设置面板可调，作用于 body 与结果网格） */
+  /* 描边 */
+  --joyo-border: #e3e7ee;
+  --joyo-border-strong: #d5dae3;
+
+  /* 文本层级 */
+  --joyo-text: #1f2329;
+  --joyo-text-muted: #6b7280;
+  --joyo-text-subtle: #9aa1ac;
+
+  /* 字号层级（基准字号由设置面板驱动） */
   --joyo-font-size: 13px;
+  --joyo-fs-xs: 11px;
+  --joyo-fs-sm: 12px;
+  --joyo-fs-md: 13px;
+  --joyo-fs-lg: 15px;
+  --joyo-fs-xl: 18px;
+
+  /* 间距与圆角 */
+  --joyo-space-1: 4px;
+  --joyo-space-2: 8px;
+  --joyo-space-3: 12px;
+  --joyo-space-4: 16px;
+  --joyo-radius-sm: 4px;
+  --joyo-radius: 6px;
+  --joyo-radius-lg: 10px;
+
+  /* 控件高度（与 Element Plus 对齐） */
+  --joyo-h-control: 28px;
+  --joyo-h-control-sm: 24px;
+  --joyo-h-toolbar: 40px;
+  --joyo-h-tab: 32px;
+
+  /* 阴影与动效 */
+  --joyo-shadow-1: 0 1px 2px rgb(16 24 40 / 6%);
+  --joyo-shadow-2: 0 8px 24px rgb(16 24 40 / 12%);
+  --joyo-transition: 150ms ease;
 }
 
 /* spec-18/F10 深色主题：只覆盖变量，不改组件样式分支 */
 :root[data-theme='dark'] {
-  --joyo-bg: #1b1e23;
-  --joyo-bg-card: #23272e;
-  --joyo-bg-sidebar: #191c21;
-  --joyo-border: #363b44;
-  --joyo-text: #d8dce3;
-  --joyo-text-muted: #8b939e;
+  --joyo-primary-hover: #5b8cf5;
+  --joyo-primary-weak: rgb(47 111 237 / 22%);
+  --joyo-primary-weak-strong: rgb(47 111 237 / 32%);
+
+  --joyo-bg: #171a1f;
+  --joyo-bg-card: #1f232a;
+  --joyo-bg-sidebar: #14171c;
+  --joyo-bg-hover: #262b33;
+  --joyo-bg-elevated: #242932;
+
+  --joyo-border: #2c323b;
+  --joyo-border-strong: #3a414c;
+
+  --joyo-text: #dfe4ea;
+  --joyo-text-muted: #98a1ac;
+  --joyo-text-subtle: #6d7681;
+
+  --joyo-shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
+  --joyo-shadow-2: 0 10px 28px rgb(0 0 0 / 50%);
 }
 
 /* 基准字号：body 与网格跟随设置 */
@@ -59,22 +110,145 @@ body {
   height: 100%;
 }
 
-/* ===== Element Plus 主题融合：映射到 Joyo 配色（ADR-002） ===== */
+/* ===== Element Plus 主题融合：配色 + 尺寸 + 圆角 + 阴影（ADR-002） ===== */
 :root {
   --el-color-primary: var(--joyo-primary);
+  --el-color-primary-light-3: var(--joyo-primary-hover);
+  --el-color-primary-light-9: var(--joyo-primary-weak);
   --el-color-success: var(--joyo-success);
   --el-color-danger: var(--joyo-danger);
   --el-color-error: var(--joyo-danger);
   --el-color-warning: var(--joyo-warning);
+
   --el-border-color: var(--joyo-border);
   --el-border-color-light: var(--joyo-border);
   --el-border-color-lighter: var(--joyo-border);
+  --el-border-color-hover: var(--joyo-border-strong);
+
   --el-text-color-primary: var(--joyo-text);
   --el-text-color-regular: var(--joyo-text);
   --el-text-color-secondary: var(--joyo-text-muted);
-  --el-fill-color-light: var(--joyo-bg-sidebar);
+  --el-text-color-placeholder: var(--joyo-text-subtle);
+
+  --el-fill-color-light: var(--joyo-bg-hover);
+  --el-fill-color-lighter: var(--joyo-bg-sidebar);
   --el-fill-color-blank: var(--joyo-bg-card);
-  --el-font-size-base: 13px;
+  --el-bg-color: var(--joyo-bg-card);
+  --el-bg-color-overlay: var(--joyo-bg-elevated);
+
+  --el-border-radius-base: var(--joyo-radius);
+  --el-border-radius-small: var(--joyo-radius-sm);
+  --el-border-radius-round: 999px;
+
+  --el-font-size-base: var(--joyo-fs-md);
+  --el-component-size: var(--joyo-h-control);
+  --el-component-size-small: var(--joyo-h-control-sm);
+  --el-component-size-large: 34px;
+
+  --el-box-shadow-light: var(--joyo-shadow-1);
+  --el-box-shadow: var(--joyo-shadow-2);
+  --el-box-shadow-dark: var(--joyo-shadow-2);
+}
+
+/* 按钮：统一字重、过渡与尺寸手感 */
+.el-button {
+  font-weight: 500;
+  transition:
+    background-color var(--joyo-transition),
+    border-color var(--joyo-transition),
+    color var(--joyo-transition),
+    box-shadow var(--joyo-transition);
+}
+
+.el-button--small {
+  padding: 0 10px;
+  height: var(--joyo-h-control-sm);
+}
+
+.el-button--default:not(.is-text):not(.is-link):not(.is-plain) {
+  background: var(--joyo-bg-card);
+}
+
+.el-button:focus-visible {
+  outline: 2px solid var(--joyo-primary-weak-strong);
+  outline-offset: 1px;
+}
+
+/* 输入类：与按钮同高同圆角 */
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner {
+  border-radius: var(--joyo-radius);
+  box-shadow: 0 0 0 1px var(--joyo-border) inset;
+}
+
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px var(--joyo-primary) inset;
+}
+
+/* 弹窗：统一圆角与阴影 */
+.el-dialog {
+  border-radius: var(--joyo-radius-lg);
+  box-shadow: var(--joyo-shadow-2);
+  border: 1px solid var(--joyo-border);
+}
+
+.el-dialog__header {
+  margin-right: 0;
+  padding: var(--joyo-space-4) var(--joyo-space-4) var(--joyo-space-3);
+  border-bottom: 1px solid var(--joyo-border);
+}
+
+.el-dialog__title {
+  font-size: var(--joyo-fs-lg);
+  font-weight: 600;
+}
+
+.el-dialog__body {
+  padding: var(--joyo-space-4);
+}
+
+/* 下拉/菜单/提示：轻阴影 + 圆角 */
+.el-popper.is-light,
+.el-select__popper,
+.el-dropdown__popper {
+  border-radius: var(--joyo-radius);
+  box-shadow: var(--joyo-shadow-2);
+  border-color: var(--joyo-border);
+}
+
+/* 滚动条：细、低调，深浅色都可用 */
+.joyo-scroll,
+.el-scrollbar__wrap,
+.conn-list .list,
+.tree-body,
+.statements,
+.diff-block,
+.notes {
+  scrollbar-width: thin;
+  scrollbar-color: var(--joyo-border-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--joyo-border-strong);
+  border: 3px solid transparent;
+  border-radius: 8px;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--joyo-text-subtle);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* 拖拽分割条时全局锁定光标与文本选择 */
@@ -127,7 +301,12 @@ body.joyo-resizing {
 .tabulator .tabulator-row.tabulator-selectable:hover,
 .tabulator .tabulator-row.tabulator-selected,
 .tabulator .tabulator-row.tabulator-row-even.tabulator-selected {
-  background: rgba(47, 111, 237, 0.08);
+  background: var(--joyo-primary-weak);
+}
+
+/* 表头悬停：可排序列给一点反馈 */
+.tabulator .tabulator-header .tabulator-col:hover {
+  background: var(--joyo-bg-hover);
 }
 
 .tabulator .tabulator-cell {
@@ -148,13 +327,13 @@ body.joyo-resizing {
   font-style: italic;
 }
 
-/* 编辑态标记（spec-16 第 2 节）：脏单元格浅黄、待删除行淡红+删除线、新增行左侧蓝条 */
+/* 编辑态标记（spec-16 第 2 节）：脏单元格暖黄、待删除行淡红+删除线、新增行左侧主色条 */
 .tabulator .tabulator-cell.joyo-cell-dirty {
-  background: #fdf6dd;
+  background: rgb(226 160 63 / 18%);
 }
 
 .tabulator .tabulator-row.joyo-row-deleted .tabulator-cell {
-  background: #fbe9e9;
+  background: rgb(214 69 69 / 12%);
   text-decoration: line-through;
   color: var(--joyo-text-muted);
 }

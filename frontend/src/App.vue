@@ -63,18 +63,24 @@ onMounted(async () => {
 <style scoped>
 .log-entry {
   margin-top: auto;
-  padding: 6px;
-  border: 1px dashed var(--joyo-border);
-  border-radius: 6px;
-  background: none;
+  height: var(--joyo-h-control);
+  padding: 0 10px;
+  border: 1px solid var(--joyo-border);
+  border-radius: var(--joyo-radius);
+  background: var(--joyo-bg-card);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--joyo-fs-sm);
   color: var(--joyo-text-muted);
+  transition:
+    color var(--joyo-transition),
+    border-color var(--joyo-transition),
+    background-color var(--joyo-transition);
 }
 
 .log-entry:hover {
   color: var(--joyo-primary);
   border-color: var(--joyo-primary);
+  background: var(--joyo-primary-weak);
 }
 </style>
 
@@ -93,20 +99,35 @@ onMounted(async () => {
 }
 
 .app-sidebar {
-  width: 260px;
+  width: 256px;
   flex-shrink: 0;
   border-right: 1px solid var(--joyo-border);
   background: var(--joyo-bg-sidebar);
   display: flex;
   flex-direction: column;
-  padding: 12px;
+  gap: var(--joyo-space-3);
+  padding: var(--joyo-space-3);
 }
 
 .app-logo {
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  gap: var(--joyo-space-2);
+  font-size: var(--joyo-fs-xl);
   font-weight: 700;
-  color: var(--joyo-primary);
-  padding: 8px 4px 16px;
+  letter-spacing: 0.4px;
+  color: var(--joyo-text);
+  padding: 4px 4px 10px;
+}
+
+/* 品牌点：给 logo 一个识别色，避免整片灰 */
+.app-logo::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--joyo-primary);
+  box-shadow: 0 0 0 3px var(--joyo-primary-weak);
 }
 
 .sidebar-placeholder {
@@ -119,7 +140,8 @@ onMounted(async () => {
 
 .app-main {
   flex: 1;
-  overflow: auto;
-  padding: 20px;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--joyo-bg);
 }
 </style>

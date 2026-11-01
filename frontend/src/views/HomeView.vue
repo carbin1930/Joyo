@@ -72,27 +72,33 @@ async function restartBackend(): Promise<void> {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  padding: var(--joyo-space-4);
 }
 
 .home-title {
   font-size: 24px;
-  margin: 8px 0 4px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  margin: 4px 0 2px;
 }
 
 .home-subtitle {
   color: var(--joyo-text-muted);
-  margin: 0 0 24px;
+  margin: 0 0 var(--joyo-space-4);
+  font-size: var(--joyo-fs-md);
 }
 
 .status-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: var(--joyo-space-2);
+  padding: var(--joyo-space-3) var(--joyo-space-4);
   border: 1px solid var(--joyo-border);
-  border-radius: 8px;
-  max-width: 520px;
-  font-size: 14px;
+  border-radius: var(--joyo-radius-lg);
+  background: var(--joyo-bg-card);
+  box-shadow: var(--joyo-shadow-1);
+  max-width: 560px;
+  font-size: var(--joyo-fs-md);
 }
 
 .status-ok {
@@ -129,20 +135,34 @@ async function restartBackend(): Promise<void> {
 
 .retry-btn {
   margin-left: auto;
-  padding: 4px 12px;
+  height: var(--joyo-h-control);
+  padding: 0 12px;
   border: 1px solid var(--joyo-border);
-  border-radius: 6px;
+  border-radius: var(--joyo-radius);
   background: var(--joyo-bg-card);
+  color: var(--joyo-text);
+  font-size: var(--joyo-fs-md);
   cursor: pointer;
+  transition:
+    border-color var(--joyo-transition),
+    background-color var(--joyo-transition),
+    color var(--joyo-transition);
 }
 
-.retry-btn:hover {
+.retry-btn:hover:not(:disabled) {
   border-color: var(--joyo-primary);
+  color: var(--joyo-primary);
+  background: var(--joyo-primary-weak);
+}
+
+.retry-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .hint {
-  margin-top: 20px;
-  color: var(--joyo-text-muted);
-  font-size: 13px;
+  margin-top: var(--joyo-space-3);
+  color: var(--joyo-text-subtle);
+  font-size: var(--joyo-fs-sm);
 }
 </style>

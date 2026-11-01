@@ -195,27 +195,35 @@ function columnTypeText(col: TableColumn): string {
   display: flex;
   flex-direction: column;
   height: 100%;
-  gap: 12px;
+  gap: var(--joyo-space-3);
+  padding: var(--joyo-space-3);
 }
 
 .detail-header {
   display: flex;
   align-items: center;
+  gap: var(--joyo-space-2);
 }
 
 .close-btn {
-  padding: 5px 12px;
+  height: var(--joyo-h-control-sm);
+  padding: 0 10px;
   border: 1px solid var(--joyo-border);
-  border-radius: 6px;
+  border-radius: var(--joyo-radius);
   background: var(--joyo-bg-card);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--joyo-fs-sm);
   color: var(--joyo-text-muted);
+  transition:
+    border-color var(--joyo-transition),
+    color var(--joyo-transition),
+    background-color var(--joyo-transition);
 }
 
 .close-btn:hover {
   border-color: var(--joyo-primary);
   color: var(--joyo-primary);
+  background: var(--joyo-primary-weak);
 }
 
 .header-spacer {
@@ -223,7 +231,8 @@ function columnTypeText(col: TableColumn): string {
 }
 
 .detail-title {
-  font-size: 18px;
+  font-size: var(--joyo-fs-lg);
+  font-weight: 600;
   margin: 0;
   font-family: Consolas, monospace;
 }
@@ -236,23 +245,37 @@ function columnTypeText(col: TableColumn): string {
 
 .tabs {
   display: flex;
-  gap: 4px;
+  gap: 2px;
+  height: var(--joyo-h-tab);
+  padding: 0 var(--joyo-space-2);
   border-bottom: 1px solid var(--joyo-border);
+  background: var(--joyo-bg-card);
+  border-radius: var(--joyo-radius) var(--joyo-radius) 0 0;
 }
 
 .tab {
   border: none;
   background: none;
-  padding: 8px 14px;
-  font-size: 13px;
+  height: 100%;
+  padding: 0 10px;
+  font-size: var(--joyo-fs-sm);
   cursor: pointer;
   color: var(--joyo-text-muted);
   border-bottom: 2px solid transparent;
+  transition:
+    background-color var(--joyo-transition),
+    color var(--joyo-transition);
+}
+
+.tab:hover {
+  background: var(--joyo-bg-hover);
+  color: var(--joyo-text);
 }
 
 .tab.active {
   color: var(--joyo-primary);
   border-bottom-color: var(--joyo-primary);
+  font-weight: 600;
 }
 
 .tab-body {
@@ -263,21 +286,30 @@ function columnTypeText(col: TableColumn): string {
 .grid {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--joyo-fs-sm);
+  background: var(--joyo-bg-card);
 }
 
 .grid th {
   text-align: left;
-  padding: 8px 10px;
+  padding: 6px 10px;
+  font-weight: 600;
+  color: var(--joyo-text-muted);
   background: var(--joyo-bg-sidebar);
   border-bottom: 1px solid var(--joyo-border);
   position: sticky;
   top: 0;
+  z-index: 1;
 }
 
 .grid td {
-  padding: 7px 10px;
+  padding: 5px 10px;
   border-bottom: 1px solid var(--joyo-border);
+  color: var(--joyo-text);
+}
+
+.grid tbody tr:hover td {
+  background: var(--joyo-bg-hover);
 }
 
 .strong {
@@ -300,26 +332,35 @@ function columnTypeText(col: TableColumn): string {
 }
 
 .btn {
-  padding: 6px 14px;
+  height: var(--joyo-h-control);
+  padding: 0 12px;
   border: 1px solid var(--joyo-border);
-  border-radius: 6px;
+  border-radius: var(--joyo-radius);
   background: var(--joyo-bg-card);
+  color: var(--joyo-text);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--joyo-fs-md);
+  transition:
+    border-color var(--joyo-transition),
+    color var(--joyo-transition),
+    background-color var(--joyo-transition);
 }
 
 .btn:hover {
   border-color: var(--joyo-primary);
+  color: var(--joyo-primary);
+  background: var(--joyo-primary-weak);
 }
 
 .ddl-pre {
   margin: 0;
-  padding: 14px;
-  background: var(--joyo-bg-card);
+  padding: var(--joyo-space-3);
+  background: var(--joyo-bg-sidebar);
   border: 1px solid var(--joyo-border);
-  border-radius: 8px;
+  border-radius: var(--joyo-radius);
   font-family: Consolas, 'Courier New', monospace;
-  font-size: 12px;
+  font-size: var(--joyo-fs-sm);
+  line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-all;
 }
