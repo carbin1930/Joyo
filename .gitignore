@@ -31,3 +31,9 @@ Thumbs.db
 
 # ===== IDE 状态（CodeBuddy 计划/缓存，不入库） =====
 .codebuddy/
+
+# ===== 本地调试输出（dev/打包临时日志） =====
+dev*.out.txt
+dev*.err.txt
+pkg*.txt
+eb*.txt
