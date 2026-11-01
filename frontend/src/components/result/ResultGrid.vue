@@ -79,12 +79,20 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#39;')
 }
 
-/** 单元格渲染：NULL 灰色斜体；BLOB 只显示占位；其余纯文本（转义防注入） */
+/**
+ * 单元格渲染：NULL 灰色斜体；BLOB 只显示占位；其余纯文本（转义防注入）。
+ * 新增行的空单元格显示"点击输入"提示，避免用户不知道这里能填。
+ */
 function renderCell(cell: CellComponent, type: string): string {
   const value = cell.getValue() as string | null | undefined
   const isNull = value === null || value === undefined
+  const isInsertRow = cell.getRow().getData().__insert === true
   cell.getElement().classList.toggle('joyo-cell-null-wrap', isNull)
-  if (isNull) return '<span class="joyo-cell-null">NULL</span>'
+  if (isNull) {
+    return isInsertRow
+      ? `<span class="joyo-cell-hint">${escapeHtml(zhCN.edit.cellHint)}</span>`
+      : '<span class="joyo-cell-null">NULL</span>'
+  }
   if (isBinaryType(type)) return '<span class="joyo-cell-blob">(BLOB)</span>'
   return escapeHtml(String(value))
 }
@@ -182,7 +190,8 @@ function buildRows(): GridRow[] {
     .filter((item) => item.change.kind === 'insert')
     .sort((a, b) => a.rowIndex - b.rowIndex)
   for (const { rowIndex, change } of inserts) {
-    const record: GridRow = { __rownum: zhCN.edit.newRow, __idx: rowIndex }
+    // __insert 供 formatter 区分"待填写"与真实 NULL
+    const record: GridRow = { __rownum: zhCN.edit.newRow, __idx: rowIndex, __insert: true }
     for (let ci = 0; ci < cols.length; ci += 1) {
       const value = change.values?.[cols[ci].name]
       record[`c${ci}`] = value === undefined ? null : value
@@ -320,7 +329,20 @@ function onContextMenu(event: MouseEvent): void {
   event.preventDefault()
 }
 
-defineExpose({ copy, selectedRowIndexes, hasSelection, pkOfRow })
+/** 定位到新增行并直接进入第一个可编辑列的编辑态（新增行后调用） */
+async function focusInsertedRow(rowIndex: number): Promise<void> {
+  if (!table) return
+  const row = table.getRows().find((r) => Number(r.getData().__idx ?? Number.NaN) === rowIndex)
+  if (!row) return
+  await table.scrollToRow(row, 'center', false)
+  const cols = visibleColumns(props.columns, props.maxColumns)
+  const firstEditable = cols.findIndex((col) => canEdit(col))
+  if (firstEditable < 0) return
+  const cell = row.getCell(`c${firstEditable}`)
+  if (cell) void cell.edit(true)
+}
+
+defineExpose({ copy, selectedRowIndexes, hasSelection, pkOfRow, focusInsertedRow })
 
 onMounted(() => {
   if (!hostRef.value) return

@@ -137,6 +137,8 @@ export const zhCN = {
     noChanges: '没有待保存的改动',
     dirtyHint: '未保存改动',
     newRow: '新',
+    /** 新增行空白单元格提示 */
+    cellHint: '点击输入',
     pkReadonly: '主键列不可修改',
     selectRowFirst: '请先选中要删除的行',
   },
@@ -179,6 +181,7 @@ export const zhCN = {
     refresh: '刷新',
     useDbTitle: '双击切换到该库',
     currentDbTitle: '当前使用的库',
+    dblClickNoTab: '请先创建或激活一个 SQL 页签，再双击表名插入',
     filterPlaceholder: '过滤名称…',
     noConnection: '连接后在此浏览库表',
     loading: '加载中…',

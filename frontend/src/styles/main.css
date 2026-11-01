@@ -163,6 +163,13 @@ body.joyo-resizing {
   box-shadow: inset 3px 0 0 var(--joyo-primary);
 }
 
+/* 新增行空白单元格提示（spec-16 补充）：浅色提示，引导用户双击填写 */
+.joyo-cell-hint {
+  color: #b6bcc6;
+  font-style: italic;
+  font-size: 11px;
+}
+
 .joyo-cell-blob {
   color: var(--joyo-text-muted);
 }

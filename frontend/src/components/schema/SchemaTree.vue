@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useConnectionStore } from '@/stores/connection'
 import { useQueryStore } from '@/stores/query'
 import { useSchemaStore, tableKey, TABLE_RENDER_CHUNK } from '@/stores/schema'
+import { toast } from '@/composables/use-toast'
 import { zhCN } from '@/locales/zh-CN'
 
 /**
@@ -71,27 +72,20 @@ function onTableClick(schema: string, table: string): void {
 }
 
 /**
- * 表别名（参考 SQLyog）：按下划线分段取首字母小写。
- * 例：order_item → oi，sys_config → sc，user → user。
- */
-function tableAlias(table: string): string {
-  const name = table.replace(/`/g, '')
-  const parts = name.split('_').filter(Boolean)
-  return parts.length > 1 ? parts.map((p) => p[0]).join('').toLowerCase() : name.toLowerCase()
-}
-
-/**
- * 双击表：插入表名到光标处（一律带别名）。
- * 与活动 SQL 页签同库：`表名` AS 别名；跨库：`库名`.`表名` AS 别名。
+ * 双击表：把表名插入到 SQL 编辑器光标处。
+ * 与活动页签同库：`表名`；跨库：`库名`.`表名`（反引号转义，名字含特殊字符也安全）。
  */
 function onTableDblClick(schema: string, table: string): void {
-  const activeDb = queryStore.activeSqlTab?.db ?? ''
+  const tab = queryStore.activeSqlTab
+  if (!tab) {
+    toast('info', zhCN.schema.dblClickNoTab)
+    return
+  }
   const escapedTable = '`' + table.replace(/`/g, '``') + '`'
-  const alias = tableAlias(table)
   const text =
-    (schema === activeDb
+    schema === tab.db
       ? escapedTable
-      : '`' + schema.replace(/`/g, '``') + '`.' + escapedTable) + ' AS ' + alias
+      : '`' + schema.replace(/`/g, '``') + '`.' + escapedTable
   queryStore.requestInsert(text)
 }
 

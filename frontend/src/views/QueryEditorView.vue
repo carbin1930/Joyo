@@ -265,6 +265,7 @@ function closeTab(e: MouseEvent, id: string): void {
           <MonacoEditor
             ref="editorRef"
             v-model="draft"
+            :insert-request="queryStore.insertRequest"
             @run="onRun"
           />
           <HistoryPanel

@@ -19,8 +19,8 @@ export function hiddenColumnCount(
   return Math.max(0, columns.length - max)
 }
 
-/** Tabulator 行记录：键为 c0..cN，行号为 __rownum */
-export type GridRow = Record<string, string | null | number>
+/** Tabulator 行记录：键为 c0..cN，行号为 __rownum；__idx 为全局行号，__insert 标记待新增行 */
+export type GridRow = Record<string, string | null | number | boolean>
 
 /**
  * 二维字符串行 → Tabulator 记录。

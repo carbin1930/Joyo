@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ResultContextMenu from '@/components/result/ResultContextMenu.vue'
 import ResultGrid from '@/components/result/ResultGrid.vue'
 import ResultStatusBar from '@/components/result/ResultStatusBar.vue'
@@ -116,6 +116,14 @@ function onCellEdit(payload: {
   store.recordCell(activeTab.value.id, payload)
 }
 
+/** 新增行：插入后滚动定位并进入编辑态（否则用户看不到/不知道要双击） */
+function onAddRow(): void {
+  const tab = activeTab.value
+  if (!tab) return
+  const rowIndex = store.addEditRow(tab.id)
+  void nextTick(() => gridRef.value?.focusInsertedRow(rowIndex))
+}
+
 function onDeleteRows(): void {
   const tab = activeTab.value
   if (!tab) return
@@ -198,7 +206,7 @@ function totalPages(tab: ResultTab): number {
             :saving="store.savingEdit"
             :has-selection="hasSelection"
             @toggle="activeTab && store.toggleEdit(activeTab.id)"
-            @add-row="activeTab && store.addEditRow(activeTab.id)"
+            @add-row="onAddRow"
             @delete-row="onDeleteRows"
             @save="saveOpen = true"
             @discard="activeTab && store.discardEdits(activeTab.id)"
