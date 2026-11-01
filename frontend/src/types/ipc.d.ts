@@ -125,6 +125,12 @@ declare global {
       getLaunchConfig(): Promise<JoyoLaunchConfig>
       /** 菜单"打开后端日志"事件（主进程 → 渲染进程） */
       onOpenLogs(cb: () => void): void
+      /** 菜单"关于 Joyo"事件；返回取消订阅函数 */
+      onOpenAbout(cb: () => void): () => void
+      /** 用系统浏览器打开外部链接（仅 http/https） */
+      openExternal(url: string): Promise<void>
+      /** 运行时版本（只读） */
+      versions: { electron: string; chromium: string; node: string }
       /** spec-13：系统文件管理器定位文件 */
       showItemInFolder(target: string): Promise<void>
       /** spec-13：写系统剪贴板 */

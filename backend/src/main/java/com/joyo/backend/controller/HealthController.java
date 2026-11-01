@@ -19,6 +19,9 @@ public class HealthController {
     private final String appVersion;
     private final JvmMetricsService jvmMetricsService;
     private final long startMs = System.currentTimeMillis();
+    /** 启动期常量：进程运行期间不会变，避免每次健康检查重复取系统属性 */
+    private final String javaVersion = System.getProperty("java.version", "");
+    private final String javaVendor = System.getProperty("java.vendor", "");
 
     public HealthController(@Value("${joyo.app-version}") String appVersion, JvmMetricsService jvmMetricsService) {
         this.appVersion = appVersion;
@@ -28,6 +31,7 @@ public class HealthController {
     @GetMapping("/health")
     public ApiResponse<HealthResponse> health() {
         long uptimeSec = (System.currentTimeMillis() - startMs) / 1000;
-        return ApiResponse.ok(new HealthResponse("joyo-backend", appVersion, uptimeSec, jvmMetricsService.sample()));
+        return ApiResponse.ok(new HealthResponse("joyo-backend", appVersion, uptimeSec,
+                jvmMetricsService.sample(), javaVersion, javaVendor));
     }
 }

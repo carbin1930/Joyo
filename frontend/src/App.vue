@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useBackendStore } from '@/stores/backend'
 import { useConnectionStore } from '@/stores/connection'
 import { useQueryStore } from '@/stores/query'
 import ConnectionList from '@/components/connection/ConnectionList.vue'
 import SchemaTree from '@/components/schema/SchemaTree.vue'
 import LogViewerDialog from '@/components/log/LogViewerDialog.vue'
+import AboutDialog from '@/components/about/AboutDialog.vue'
 import StatusBar from '@/components/status/StatusBar.vue'
 import ToastHost from '@/components/ToastHost.vue'
 import { useSettingsStore } from '@/stores/settings'
@@ -16,6 +17,9 @@ const connections = useConnectionStore()
 const queryStore = useQueryStore()
 const settings = useSettingsStore()
 const logOpen = ref(false)
+/** 关于面板（菜单 → 帮助 → 关于 Joyo） */
+const aboutOpen = ref(false)
+let offAbout: (() => void) | undefined
 
 /** 日志入口分流：已连接 → 主区"日志"页签；未连接 → 弹窗兜底 */
 function openLogs(): void {
@@ -30,10 +34,18 @@ onMounted(async () => {
   void backend.check()
   // 菜单"打开后端日志"
   window.joyo?.onOpenLogs(openLogs)
+  // 菜单"关于 Joyo"
+  offAbout = window.joyo?.onOpenAbout(() => {
+    aboutOpen.value = true
+    // 打开时刷新一次后端信息，确保 Java 版本/版本号是最新的
+    void backend.check()
+  })
   // spec-18：启动即加载主题/字号/行数上限
   await settings.load()
   queryStore.maxRows = settings.settings.maxRows
 })
+
+onUnmounted(() => offAbout?.())
 </script>
 
 <template>
@@ -57,6 +69,7 @@ onMounted(async () => {
     <StatusBar />
     <ToastHost />
     <LogViewerDialog :open="logOpen" @close="logOpen = false" />
+    <AboutDialog :open="aboutOpen" @close="aboutOpen = false" />
   </div>
 </template>
 

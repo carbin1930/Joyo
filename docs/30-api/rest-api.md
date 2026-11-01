@@ -26,12 +26,15 @@
     "app": "joyo-backend",
     "version": "0.1.0",
     "uptimeSec": 12,
-    "jvm": { "heapUsedMb": 210.5, "heapMaxMb": 512.0, "cpuLoad": 0.08 }
+    "jvm": { "heapUsedMb": 210.5, "heapMaxMb": 512.0, "cpuLoad": 0.08 },
+    "javaVersion": "21.0.12",
+    "javaVendor": "Eclipse Adoptium"
   }
 }
 ```
 
 - `jvm.cpuLoad`：`OperatingSystemMXBean.getProcessCpuLoad()`，首次调用（无基线）返回负数 → 输出 `null`
+- `javaVersion` / `javaVendor`（"关于"面板展示）：取自 `System.getProperty("java.version" | "java.vendor")`，进程启动期读取一次
 
 ### GET /logs（spec-13）
 

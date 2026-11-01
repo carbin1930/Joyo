@@ -14,7 +14,8 @@ class ApiResponseTest {
     @DisplayName("成功响应序列化为 code=0/message=ok")
     void 成功响应序列化() throws Exception {
         String json = objectMapper.writeValueAsString(
-                ApiResponse.ok(new HealthResponse("joyo-backend", "0.1.0", 1, null)));
+                ApiResponse.ok(new HealthResponse("joyo-backend", "0.1.0", 1, null,
+                        "21.0.12", "Eclipse Adoptium")));
 
         assertThat(json).contains("\"code\":0");
         assertThat(json).contains("\"message\":\"ok\"");

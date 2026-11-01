@@ -28,6 +28,9 @@ if (!gotTheLock) {
 let win: BrowserWindow | null = null
 let backend: ResolvedBackend | null = null
 
+/** 项目主页（"关于"面板与帮助菜单共用） */
+const JOYO_REPO_URL = 'https://github.com/carbin1930/Joyo'
+
 /** 后端文件日志路径：打包模式在数据目录，开发模式在 backend/logs */
 function backendLogPath(): string {
   return app.isPackaged
@@ -77,7 +80,14 @@ function buildMenu(): void {
     },
     {
       label: '帮助',
-      submenu: [{ label: '关于 Joyo', role: 'about' }],
+      submenu: [
+        // 自绘"关于"面板（含 Java 版本、作者、Git 地址）；role: 'about' 无法定制内容
+        { label: '关于 Joyo', click: () => win?.webContents.send('joyo:open-about') },
+        {
+          label: '项目主页（GitHub）',
+          click: () => void shell.openExternal(JOYO_REPO_URL),
+        },
+      ],
     },
   ]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
@@ -179,6 +189,11 @@ app.whenReady().then(async () => {
     // spec-13：渲染层"打开目录"与"复制全部"（渲染进程无 shell/clipboard 权限）
     ipcMain.handle('shell:show-item', (_event, target: string) => {
       shell.showItemInFolder(target)
+    })
+    // "关于"面板里的 Git 地址：只允许打开 http(s)，避免被渲染层诱导执行任意协议
+    ipcMain.handle('shell:open-external', async (_event, url: string) => {
+      if (!/^https?:\/\//i.test(url)) throw new Error('仅支持 http(s) 链接')
+      await shell.openExternal(url)
     })
     ipcMain.handle('clipboard:write-text', (_event, text: string) => {
       clipboard.writeText(text)

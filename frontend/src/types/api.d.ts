@@ -14,6 +14,10 @@ export interface HealthData {
   uptimeSec: number
   /** JVM 资源指标（spec-14） */
   jvm?: JvmInfo | null
+  /** 后端所用 Java 版本（关于面板展示） */
+  javaVersion?: string
+  /** Java 发行方 */
+  javaVendor?: string
 }
 
 /** JVM 资源指标（spec-14）：cpuLoad 首次采样为 null，前端显示"--" */

@@ -69,6 +69,17 @@ export const zhCN = {
     install: '立即安装并重启',
     check: '检查更新',
   },
+  about: {
+    // ===== 关于面板 =====
+    title: '关于 Joyo',
+    version: '版本',
+    java: 'Java 版本',
+    electron: '运行时',
+    author: '作者',
+    repo: '项目地址',
+    unknown: '未知（后端未就绪）',
+    copyright: 'Joyo · 开源 MySQL 桌面客户端',
+  },
   settings: {
     // ===== 设置面板（spec-18/F10 第 2 节） =====
     title: '设置',

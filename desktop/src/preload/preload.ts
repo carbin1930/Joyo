@@ -22,6 +22,20 @@ contextBridge.exposeInMainWorld('joyo', {
   onOpenLogs: (cb: () => void): void => {
     ipcRenderer.on('joyo:open-logs', () => cb())
   },
+  /** 菜单"关于 Joyo" → 渲染进程打开关于面板 */
+  onOpenAbout: (cb: () => void): (() => void) => {
+    const listener = (): void => cb()
+    ipcRenderer.on('joyo:open-about', listener)
+    return () => ipcRenderer.removeListener('joyo:open-about', listener)
+  },
+  /** 用系统浏览器打开外部链接（仅 http/https，Main 侧二次校验） */
+  openExternal: (url: string): Promise<void> => ipcRenderer.invoke('shell:open-external', url),
+  /** 运行时版本（关于面板展示；只读常量） */
+  versions: {
+    electron: process.versions.electron ?? '',
+    chromium: process.versions.chrome ?? '',
+    node: process.versions.node ?? '',
+  },
   /** spec-13：在系统文件管理器中定位文件（日志"打开目录"按钮） */
   showItemInFolder: (target: string): Promise<void> => ipcRenderer.invoke('shell:show-item', target),
   /** spec-13：写系统剪贴板（日志"复制全部"按钮） */
