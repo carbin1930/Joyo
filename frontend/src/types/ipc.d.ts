@@ -135,6 +135,8 @@ declare global {
       getSettings(): Promise<AppSettings>
       /** spec-18：合并保存设置（部分更新） */
       setSettings(patch: Partial<AppSettings>): Promise<AppSettings>
+      /** 重启后端进程（后端异常退出后恢复） */
+      restartBackend(): Promise<{ baseUrl: string; token: string }>
       /** spec-19：检查更新 */
       checkUpdate(): Promise<UpdateState>
       /** spec-19：退出并安装新版本 */

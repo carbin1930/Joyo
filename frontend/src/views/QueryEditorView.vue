@@ -223,6 +223,15 @@ function closeTab(e: MouseEvent, id: string): void {
         >
           {{ queryStore.executing ? zhCN.query.running : zhCN.query.run }}
         </el-button>
+        <!-- spec-20：执行中可中断（后端取消 JDBC 语句） -->
+        <el-button
+          v-if="queryStore.executing"
+          type="danger"
+          data-testid="cancel-query-btn"
+          @click="queryStore.cancelRunning()"
+        >
+          {{ zhCN.query.stop }}
+        </el-button>
         <el-button
           data-testid="history-btn"
           :type="historyOpen ? 'primary' : 'default'"

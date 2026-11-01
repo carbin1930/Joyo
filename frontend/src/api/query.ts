@@ -12,6 +12,22 @@ export interface QueryExecutePayload {
   queryTimeoutSec?: number
   /** 目标数据库（可选），后端执行前 USE */
   database?: string
+  /** 客户端自选查询 id（spec-20）：执行期间可用它调用取消接口中断 */
+  clientQueryId?: string
+}
+
+/** 取消响应（spec-20） */
+export interface CancelResponse {
+  queryId: string
+  canceled: boolean
+}
+
+/** 中断执行中的查询：queryId 即执行请求里的 clientQueryId */
+export function cancelQuery(queryId: string): Promise<CancelResponse> {
+  return request<CancelResponse>(
+    'POST',
+    `/api/v1/queries/${encodeURIComponent(queryId)}/cancel`,
+  )
 }
 
 export function executeQuery(

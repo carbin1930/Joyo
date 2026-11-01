@@ -37,6 +37,9 @@ contextBridge.exposeInMainWorld('joyo', {
   /** spec-18：合并保存设置（部分更新），返回保存后的完整设置 */
   setSettings: (patch: Partial<AppSettings>): Promise<AppSettings> =>
     ipcRenderer.invoke('settings:set', patch),
+  /** 重启后端进程（后端异常退出后恢复）；返回新的连接配置 */
+  restartBackend: (): Promise<{ baseUrl: string; token: string }> =>
+    ipcRenderer.invoke('backend:restart'),
   /** spec-19：检查更新，返回当前更新状态 */
   checkUpdate: (): Promise<UpdateState> => ipcRenderer.invoke('updater:check'),
   /** spec-19：退出并安装已下载的新版本 */

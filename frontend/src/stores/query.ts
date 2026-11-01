@@ -1,5 +1,5 @@
 ﻿import { defineStore } from 'pinia'
-import { executeQuery, getQueryRows } from '@/api/query'
+import { cancelQuery, executeQuery, getQueryRows } from '@/api/query'
 import { applyMutations } from '@/api/mutations'
 import { toast } from '@/composables/use-toast'
 import {
@@ -93,6 +93,8 @@ export const useQueryStore = defineStore('query', {
     resultsByTab: {} as Record<string, ResultTab[]>,
     activeResultByTab: {} as Record<string, string | null>,
     executing: false,
+    /** spec-20：当前执行中的客户端查询 id（用于中断） */
+    runningQueryId: null as string | null,
     savingEdit: false,
     maxRows: 1000,
     insertRequest: null as { text: string; seq: number } | null,
@@ -216,6 +218,9 @@ export const useQueryStore = defineStore('query', {
         return
       }
       this.executing = true
+      // spec-20：本次执行的客户端查询 id，执行期间可用它调用取消接口
+      const clientQueryId = `q-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      this.runningQueryId = clientQueryId
       const connectionName =
         useConnectionStore().items.find((c) => c.id === tab.connectionId)?.name ?? ''
       try {
@@ -223,6 +228,7 @@ export const useQueryStore = defineStore('query', {
           sql,
           maxRows: this.maxRows,
           database: tab.db ? tab.db : undefined,
+          clientQueryId,
         })
         // 重跑视为放弃旧改动（旧结果页签的编辑态一并清理）
         for (const old of this.resultsByTab[tabId] ?? []) delete this.edits[old.id]
@@ -265,6 +271,18 @@ export const useQueryStore = defineStore('query', {
         })
       } finally {
         this.executing = false
+        this.runningQueryId = null
+      }
+    },
+
+    /** spec-20：中断当前执行中的查询（后端取消 JDBC 语句，请求随即失败并 toast） */
+    async cancelRunning(): Promise<void> {
+      const queryId = this.runningQueryId
+      if (!queryId) return
+      try {
+        await cancelQuery(queryId)
+      } catch (e) {
+        toast('error', e instanceof Error ? e.message : String(e))
       }
     },
 

@@ -19,6 +19,9 @@ release/
 backend-runtime/
 *.log
 
+# ===== 打包中间产物（scripts/package.* 生成，不入厙） =====
+desktop/dist-electron/renderer/
+
 # ===== IDE / 系统 =====
 .idea/
 .vscode/

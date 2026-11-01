@@ -10,7 +10,8 @@
     "test:frontend": "pnpm --filter frontend test",
     "typecheck:frontend": "pnpm --filter frontend typecheck",
     "build:desktop": "pnpm --filter desktop build",
-    "dev:desktop": "pnpm --filter desktop dev"
+    "dev:desktop": "pnpm --filter desktop dev",
+    "package": "powershell -ExecutionPolicy Bypass -File scripts/package.ps1"
   },
   "engines": {
     "node": ">=20"

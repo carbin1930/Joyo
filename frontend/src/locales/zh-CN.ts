@@ -9,6 +9,9 @@ export const zhCN = {
     ok: (version: string) => `后端服务正常（v${version}）`,
     unavailable: '后端服务异常',
     retry: '重试',
+    /** PRD 可靠性：后端进程异常退出后重启后端 */
+    restart: '重启后端',
+    restarting: '重启中…',
   },
   common: {
     cancel: '取消',
@@ -140,6 +143,8 @@ export const zhCN = {
   query: {
     run: '运行',
     running: '执行中…',
+    /** spec-20：执行中中断查询 */
+    stop: '停止',
     emptySql: '没有可执行的语句',
     noResult: '按 Ctrl+Enter 或点击运行执行 SQL',
     errorTab: '错误',

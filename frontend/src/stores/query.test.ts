@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 const apiMock = vi.hoisted(() => ({
   executeQuery: vi.fn(),
   getQueryRows: vi.fn(),
+  cancelQuery: vi.fn(),
 }))
 
 vi.mock('@/api/query', () => apiMock)
@@ -83,11 +84,16 @@ describe('query store（多 SQL 页签）', () => {
 
     await store.execute(tabA.id, 'SELECT 1')
 
-    expect(apiMock.executeQuery).toHaveBeenCalledWith('conn-1', {
-      sql: 'SELECT 1',
-      maxRows: 1000,
-      database: 'dbA',
-    })
+    // spec-20：执行请求带客户端查询 id（用于中断），形状断言用 objectContaining
+    expect(apiMock.executeQuery).toHaveBeenCalledWith(
+      'conn-1',
+      expect.objectContaining({
+        sql: 'SELECT 1',
+        maxRows: 1000,
+        database: 'dbA',
+        clientQueryId: expect.any(String),
+      }),
+    )
     expect(store.resultsByTab[tabA.id]).toHaveLength(1)
     expect(store.resultsByTab[tabB.id]).toBeUndefined()
     expect(store.activeResultByTab[tabA.id]).toBe(store.resultsByTab[tabA.id][0].id)

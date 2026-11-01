@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -40,12 +41,38 @@ public class QueryService {
     private final ConnectionService connectionService;
     private final QueryResultCache resultCache;
     private final EditableResolver editableResolver;
+    /** 执行中的语句句柄（clientQueryId → Statement），供 POST /queries/{id}/cancel 中断 */
+    private final Map<String, Statement> running = new ConcurrentHashMap<>();
 
     public QueryService(ConnectionService connectionService, QueryResultCache resultCache,
                         EditableResolver editableResolver) {
         this.connectionService = connectionService;
         this.resultCache = resultCache;
         this.editableResolver = editableResolver;
+    }
+
+    /**
+     * 中断执行中的查询（spec-20，rest-api.md 第 4 节）：
+     * 客户端在执行请求里带上自选的 clientQueryId，执行期间可用它调用 cancel 取消 JDBC 语句。
+     *
+     * @return true=已发出中断；false=该 id 不在执行中（已结束或不存在）
+     */
+    public boolean cancel(String queryId) {
+        if (queryId == null || queryId.isBlank()) {
+            throw new BizException(ErrorCode.PARAM_INVALID, "queryId 不能为空");
+        }
+        Statement stmt = running.get(queryId);
+        if (stmt == null) {
+            return false;
+        }
+        try {
+            stmt.cancel();
+            log.info("查询已请求中断: queryId={}", queryId);
+        } catch (SQLException e) {
+            // MySQL 驱动 cancel 需要另开连接发 KILL QUERY；失败只记日志，不掩盖原查询错误
+            log.warn("中断查询失败: queryId={}, {}", queryId, e.getMessage());
+        }
+        return true;
     }
 
     public QueryExecuteResponse execute(String connectionId, QueryExecuteRequest request) {
@@ -69,9 +96,10 @@ public class QueryService {
                 }
             }
             int ordinal = 0;
+            String clientQueryId = request.clientQueryIdOrEmpty();
             for (String sql : statements) {
                 ordinal++;
-                results.add(executeOne(conn, ordinal, sql, request));
+                results.add(executeOne(conn, ordinal, sql, request, clientQueryId));
             }
         } catch (BizException e) {
             throw e;
@@ -85,23 +113,39 @@ public class QueryService {
     }
 
     private StatementResult executeOne(
-            Connection conn, int ordinal, String sql, QueryExecuteRequest request) throws SQLException {
+            Connection conn, int ordinal, String sql, QueryExecuteRequest request, String clientQueryId)
+            throws SQLException {
         long start = System.currentTimeMillis();
         try (Statement stmt = conn.createStatement()) {
             stmt.setQueryTimeout(request.queryTimeoutOrDefault());
-            boolean hasResultSet = stmt.execute(sql);
-
-            if (hasResultSet) {
-                return executeSelect(conn, stmt, ordinal, request, start);
+            if (!clientQueryId.isEmpty()) {
+                running.put(clientQueryId, stmt);
             }
-            long affected = stmt.getUpdateCount();
-            String kind = affected >= 0 ? "UPDATE" : "DDL";
-            log.debug("语句执行完成: ordinal={}, kind={}, affected={}", ordinal, kind, affected);
-            return new StatementResult(ordinal, kind, null, null, null, null, null,
-                    null, null, null, Math.max(affected, 0), System.currentTimeMillis() - start, null);
+            try {
+                return executeOneInner(conn, stmt, ordinal, sql, request, start);
+            } finally {
+                if (!clientQueryId.isEmpty()) {
+                    running.remove(clientQueryId);
+                }
+            }
         } catch (SQLException e) {
             throw classify(e);
         }
+    }
+
+    private StatementResult executeOneInner(
+            Connection conn, Statement stmt, int ordinal, String sql, QueryExecuteRequest request,
+            long start) throws SQLException {
+        boolean hasResultSet = stmt.execute(sql);
+
+        if (hasResultSet) {
+            return executeSelect(conn, stmt, ordinal, request, start);
+        }
+        long affected = stmt.getUpdateCount();
+        String kind = affected >= 0 ? "UPDATE" : "DDL";
+        log.debug("语句执行完成: ordinal={}, kind={}, affected={}", ordinal, kind, affected);
+        return new StatementResult(ordinal, kind, null, null, null, null, null,
+                null, null, null, Math.max(affected, 0), System.currentTimeMillis() - start, null);
     }
 
     private StatementResult executeSelect(

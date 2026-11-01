@@ -24,10 +24,16 @@ public final class QueryModels {
             @Min(value = 1, message = "queryTimeoutSec 范围 1-600")
             @Max(value = 600, message = "queryTimeoutSec 范围 1-600") Integer queryTimeoutSec,
             /** 目标数据库（可选）：非空时执行前先 USE，解决连接池库上下文残留 */
-            String database) {
+            String database,
+            /** 客户端自选的查询 id（spec-20）：执行期间可用 POST /queries/{id}/cancel 中断 */
+            String clientQueryId) {
 
         public int maxRowsOrDefault() {
             return maxRows == null ? 1000 : maxRows;
+        }
+
+        public String clientQueryIdOrEmpty() {
+            return clientQueryId == null ? "" : clientQueryId;
         }
 
         public int queryTimeoutOrDefault() {
@@ -68,6 +74,10 @@ public final class QueryModels {
 
     /** 多语句整体响应 */
     public record QueryExecuteResponse(List<StatementResult> statements, long elapsedMs) {
+    }
+
+    /** POST /queries/{queryId}/cancel 响应（spec-20） */
+    public record CancelResponse(String queryId, boolean canceled) {
     }
 
     /** GET /queries/{queryId}/rows 响应 */

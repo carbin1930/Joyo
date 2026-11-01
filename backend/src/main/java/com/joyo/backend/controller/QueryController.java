@@ -1,6 +1,7 @@
 package com.joyo.backend.controller;
 
 import com.joyo.backend.model.ApiResponse;
+import com.joyo.backend.model.QueryModels.CancelResponse;
 import com.joyo.backend.model.QueryModels.QueryExecuteRequest;
 import com.joyo.backend.model.QueryModels.QueryExecuteResponse;
 import com.joyo.backend.model.QueryModels.RowsPageResponse;
@@ -33,6 +34,13 @@ public class QueryController {
             @PathVariable String connectionId,
             @Valid @RequestBody QueryExecuteRequest request) {
         return ApiResponse.ok(queryService.execute(connectionId, request));
+    }
+
+    /** spec-20：中断执行中的查询（queryId 为执行请求里的 clientQueryId） */
+    @PostMapping("/api/v1/queries/{queryId}/cancel")
+    public ApiResponse<CancelResponse> cancel(@PathVariable String queryId) {
+        boolean canceled = queryService.cancel(queryId);
+        return ApiResponse.ok(new CancelResponse(queryId, canceled));
     }
 
     @GetMapping("/api/v1/queries/{queryId}/rows")

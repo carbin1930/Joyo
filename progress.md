@@ -9,6 +9,7 @@
 - 已完成并合入 main：spec-01 连接管理、spec-02 库表浏览、spec-03 SQL 编辑器（含多 SQL 页签/F13 精简日志/Element Plus 第一批替换，提交 `1f68538`）
 - 当前分支：`main`（与 origin/main 同步，工作区干净）
 - 实机验收：spec-03 增强改动已通过（多 SQL 页签正常；"内部错误 1500" 未再复现）
+- **遗漏项补齐（2026-10-27）**：审计发现 4 块未做，已全部实现——①**打包与分发**（spec-22：`scripts/package.ps1` / `package.sh` 串起 vite → tsc → mvn package → jlink（实测 35MB）→ electron-builder nsis，产出 `release/Joyo-Setup-0.1.0.exe`；渲染产物复制到 `dist-electron/renderer`）；②**查询中断**（spec-20：`clientQueryId` + `Statement.cancel()` + 工具栏"停止"）；③**启动画面**（spec-21：`splash.ts` 内联 HTML 小窗）；④**后端重启**（spec-21：IPC `backend:restart` + 首页"重启后端"按钮 + `resetApiConfig()`）。踩坑：Windows 下 `.ps1` 含中文必须存为 **UTF-8 BOM**，否则 PowerShell 5.1 按 ANSI 解析会语法错乱；electron-builder 的 makensis 报"无法创建 __uninstaller.exe"多为杀软占用，**清空 release/ 重跑**即可
 - **v0.5 / v1.0 代码完成**：spec-17 表/数据同步、spec-18 设置面板、spec-19 自动更新 已实现（均待实机验收）。踩坑：①本机 pnpm 创建符号链接被系统拒绝（os error 5），`electron-updater` 装不上——已写进 desktop/package.json 依赖与 `build.publish` 占位，需在有权限的环境执行 `pnpm install` 补齐，代码侧用运行时动态 import + 缺失降级，因此不会编译失败；②electron-updater 类型因此不静态引用（避免未安装时 TS2307）
 - **v0.4 进行中**：spec-16 表数据编辑已实现（待实机验收）。实现说明：可编辑性后端查询时判定（`ResultSetMetaData.getTableName` 判单表 + `information_schema.COLUMNS` 取主键，主键列须全部出现在结果列、截断结果不可编辑）；`/mutations` 一请求一事务（PreparedStatement 参数绑定、列名白名单、UPDATE/DELETE 影响 0 行视为失败回滚）；前端 `use-result-edit.ts` 纯逻辑（脏标记按全局行号、新增行负数行号、翻页不丢）+ `ResultEditToolbar`/`SaveChangesDialog`；保存成功后重跑当前 SQL 刷新。踩坑：`StatementResult` 增删字段需同步 QueryIT 构造；Mockito 桩不可留未完成 `when(...)`
 - **v0.3**：spec-15 导出已实现（待实机验收）。

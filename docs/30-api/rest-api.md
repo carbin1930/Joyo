@@ -219,6 +219,19 @@ interface SaveConnectionInput {
 
 结果翻页。返回 data：`{ "queryId", "rows", "page", "pageSize", "totalKnown", "totalRows" }`。
 
+### POST /queries/{queryId}/cancel（spec-20）
+
+中断执行中的查询。`queryId` 为执行请求里客户端自带的 `clientQueryId`（执行期间后端登记 JDBC `Statement`，取消即 `Statement.cancel()`）。
+
+```json
+// 响应 data
+{ "queryId": "q-1712345678-ab12cd", "canceled": true }
+```
+
+- `canceled=false`：该 id 当前不在执行中（已结束或不存在），无副作用
+- `queryId` 为空 → 1001；中断后原执行请求以查询错误结束（3001）
+- 执行请求体字段：`{ "sql", "maxRows", "queryTimeoutSec", "database", "clientQueryId" }`（`clientQueryId` 可选）
+
 ### POST /export（spec-15）
 
 导出为文件流（**响应不是** ApiResponse JSON）。开流前失败（参数 1001、连接 2001、SQL 3xxx）→ 标准 ApiResponse 错误 JSON；开流后失败表现为流中断。
@@ -326,5 +339,5 @@ X-Joyo-Token: <token>
 
 - 查询历史（spec-05）：**不经过后端**。由 Electron Main 持久化（better-sqlite3），IPC 通道 `history:append` / `history:list` / `history:delete` / `history:clear`（契约见 spec-05 第 3 节）
 - SSH 隧道（spec-06）：连接模型 `sshTunnel` 对象落地；`/connections/test` 与 session 请求体增加可选 `sshTunnel` 字段（JSch fork `com.github.mwiede:jsch:0.2.x`，隧道由后端建立，错误码 2005）
-- `POST /queries/{queryId}/cancel`（查询中断，v0.4）
+- `POST /queries/{queryId}/cancel`（查询中断）：已由 spec-20 落地，见查询执行节
 - 同步的方向/冲突策略扩展、定时同步（spec-17 扩展点，v0.5+）

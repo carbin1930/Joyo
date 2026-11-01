@@ -1,12 +1,14 @@
 ﻿<script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useBackendStore } from '@/stores/backend'
 import { useConnectionStore } from '@/stores/connection'
+import { resetApiConfig } from '@/api/http'
 import QueryEditorView from '@/views/QueryEditorView.vue'
 import { zhCN } from '@/locales/zh-CN'
 
 const backend = useBackendStore()
 const connections = useConnectionStore()
+const restarting = ref(false)
 
 /** 已连接 → SQL 编辑器常驻主区（表结构在下半区页签）；否则首页状态卡 */
 const connected = computed(() => connections.connectedIds.length > 0)
@@ -14,6 +16,22 @@ const connected = computed(() => connections.connectedIds.length > 0)
 onMounted(() => {
   void backend.check()
 })
+
+/** PRD 可靠性要求：后端进程异常退出后可直接重启后端（Main 负责 stop → 重新拉起） */
+async function restartBackend(): Promise<void> {
+  if (restarting.value) return
+  restarting.value = true
+  try {
+    await window.joyo?.restartBackend()
+    // 后端换了端口与 token，渲染层缓存的连接配置必须重置
+    resetApiConfig()
+    await backend.check()
+  } catch (e) {
+    backend.errorMessage = e instanceof Error ? e.message : String(e)
+  } finally {
+    restarting.value = false
+  }
+}
 </script>
 
 <template>
@@ -31,6 +49,15 @@ onMounted(() => {
         </span>
         <button v-if="backend.status === 'unavailable'" class="retry-btn" @click="backend.check()">
           {{ zhCN.backend.retry }}
+        </button>
+        <button
+          v-if="backend.status === 'unavailable'"
+          class="retry-btn"
+          data-testid="restart-backend"
+          :disabled="restarting"
+          @click="restartBackend"
+        >
+          {{ restarting ? zhCN.backend.restarting : zhCN.backend.restart }}
         </button>
       </div>
 

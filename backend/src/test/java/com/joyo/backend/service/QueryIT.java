@@ -51,7 +51,7 @@ class QueryIT {
             new QueryService(connectionService, cache, new EditableResolver());
 
     private QueryExecuteRequest request(String sql, Integer maxRows, Integer timeoutSec) {
-        return new QueryExecuteRequest(sql, maxRows, timeoutSec, null);
+        return new QueryExecuteRequest(sql, maxRows, timeoutSec, null, null);
     }
 
     @Test

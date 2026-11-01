@@ -7,6 +7,7 @@ import { SafeStorageCipher } from './safe-storage-cipher'
 import { ConnectionsStore, connectionsFilePath } from './secure-store'
 import { SettingsStore, settingsFilePath, type AppSettings } from './settings-store'
 import { UpdateManager } from './updater'
+import { closeSplash, showSplash } from './splash'
 import { resolveBackend, type ResolvedBackend } from './sidecar'
 import { createHealthFetcher, startMetricsSampler } from './metrics-sampler'
 import { downloadExport, type ExportJob } from './export-runner'
@@ -99,13 +100,20 @@ function createWindow(): void {
     },
   })
 
-  win.once('ready-to-show', () => win?.show())
+  win.once('ready-to-show', () => {
+    win?.show()
+    // 主窗可见后再关启动画面，避免中间出现空白
+    closeSplash()
+  })
   // 防止页面 title 覆盖
   win.on('page-title-updated', (e) => e.preventDefault())
 
   const devServerUrl = process.env.VITE_DEV_SERVER_URL
   if (devServerUrl) {
     void win.loadURL(devServerUrl)
+  } else if (app.isPackaged) {
+    // 打包后渲染产物由打包脚本复制到 dist-electron/renderer（见 scripts/package.ps1）
+    void win.loadFile(path.join(__dirname, '../renderer/index.html'))
   } else {
     void win.loadFile(path.join(__dirname, '../../../frontend/dist/index.html'))
   }
@@ -125,6 +133,8 @@ app.on('second-instance', () => {
 app.whenReady().then(async () => {
   try {
     buildMenu()
+    // ADR-001：冷启动期间用启动画面给出反馈（后端就绪后关闭）
+    showSplash()
     backend = await resolveBackend(app.isPackaged, backendLogPath())
     console.log(`[main] 后端就绪: ${backend.baseUrl}`)
 
@@ -148,6 +158,17 @@ app.whenReady().then(async () => {
     const settingsStore = new SettingsStore(settingsFilePath(app.getPath('userData')))
     ipcMain.handle('settings:get', () => settingsStore.load())
     ipcMain.handle('settings:set', (_event, patch: Partial<AppSettings>) => settingsStore.save(patch))
+
+    // PRD 可靠性要求：后端异常退出后可从界面重启后端进程（stop → 重新拉起）
+    ipcMain.handle('backend:restart', async () => {
+      try {
+        await backend?.stop?.()
+      } catch (e) {
+        console.warn('[main] 停止后端失败（继续重启）', e)
+      }
+      backend = await resolveBackend(app.isPackaged, backendLogPath())
+      return { baseUrl: backend.baseUrl, token: backend.token }
+    })
 
     // spec-19/F11：自动更新（检查 / 安装，事件经 updater:event 推送）
     const updateManager = new UpdateManager(() => win)
@@ -193,6 +214,8 @@ app.whenReady().then(async () => {
       createHealthFetcher(backend.baseUrl, backend.token),
     )
   } catch (e) {
+    // 启动失败时务必关掉启动画面，避免残留一个无法关闭的小窗
+    closeSplash()
     dialog.showErrorBox('Joyo 启动失败', String(e))
     app.quit()
   }
