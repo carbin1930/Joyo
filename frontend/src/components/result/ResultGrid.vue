@@ -110,6 +110,21 @@ function renderedColumnCount(): number {
   return visibleColumns(props.columns, props.maxColumns).length
 }
 
+/** MySQL 数值类型（用于列宽与右对齐判定） */
+const NUMERIC_TYPES = new Set([
+  'tinyint',
+  'smallint',
+  'mediumint',
+  'int',
+  'integer',
+  'bigint',
+  'decimal',
+  'numeric',
+  'float',
+  'double',
+  'bit',
+])
+
 /** 主键列名集合（spec-16：主键列只读） */
 function pkColumns(): Set<string> {
   return new Set(props.editable?.primaryKey ?? [])
@@ -158,6 +173,10 @@ function editorForColumn(col: ColumnMeta): CellEditor | 'input' {
       const input = document.createElement('input')
       input.type = inputType
       input.className = 'joyo-cell-editor'
+      // 原生控件需要足够宽度才能完整显示"日期 + 时分秒"
+      if (inputType === 'datetime-local') input.style.minWidth = '184px'
+      else if (inputType === 'date') input.style.minWidth = '116px'
+      else input.style.minWidth = '92px'
       if (inputType === 'datetime-local') input.step = '1'
       const current = cell.getValue() as string | null
       if (current) {
@@ -207,6 +226,31 @@ function isDirtyCell(rowIndex: number, column: string): boolean {
   return change?.kind === 'update' && change.values != null && column in change.values
 }
 
+/**
+ * 列类型 → 建议最小列宽（参考 DataGrip / HeidiSQL 的默认手感）：
+ * 日期时间要能放下 "2026/11/01 13:05:00"，数值窄一点并右对齐，长文本给宽些。
+ */
+function columnMinWidth(type: string | null | undefined): number {
+  const t = (type ?? '').toLowerCase()
+  if (t === 'datetime' || t === 'timestamp') return 190
+  if (t === 'date') return 118
+  if (t === 'time') return 108
+  if (t === 'year') return 92
+  if (NUMERIC_TYPES.has(t)) return 96
+  if (t === 'json') return 220
+  if (t === 'tinytext' || t === 'text' || t === 'mediumtext' || t === 'longtext') return 200
+  if (t === 'tinyblob' || t === 'blob' || t === 'mediumblob' || t === 'longblob') return 110
+  if (t === 'binary' || t === 'varbinary') return 110
+  if (t === 'enum' || t === 'set') return 130
+  if (t === 'char' || t === 'varchar') return 150
+  return 120
+}
+
+/** 数值列右对齐（与主流客户端一致，便于目视比大小） */
+function isNumericColumn(type: string | null | undefined): boolean {
+  return NUMERIC_TYPES.has((type ?? '').toLowerCase())
+}
+
 function buildColumns(): ColumnDefinition[] {
   const rownum: ColumnDefinition = {
     title: '#',
@@ -223,7 +267,8 @@ function buildColumns(): ColumnDefinition[] {
       title: locked.has(col.name) ? `🔒 ${col.name}` : col.name,
       field: `c${ci}`,
       headerTooltip: locked.has(col.name) ? `${col.type} · ${zhCN.edit.pkReadonly}` : col.type,
-      minWidth: 60,
+      minWidth: columnMinWidth(col.type),
+      hozAlign: isNumericColumn(col.type) ? 'right' : 'left',
       formatter: (cell: CellComponent) => {
         const html = renderCell(cell, col.type)
         const rowIndex = Number(cell.getRow().getData().__idx ?? Number.NaN)

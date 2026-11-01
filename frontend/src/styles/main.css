@@ -354,6 +354,22 @@ body.joyo-resizing {
   background: transparent;
 }
 
+/* 编辑中允许溢出单元格：日期时间控件比窄列宽，需要浮在列上完整展示 */
+.tabulator .tabulator-cell.tabulator-editing {
+  overflow: visible;
+  z-index: 3;
+}
+
+.tabulator .tabulator-cell.tabulator-editing .joyo-cell-editor {
+  position: relative;
+  z-index: 4;
+  width: auto;
+  background: var(--joyo-bg-card);
+  box-shadow: 0 0 0 1px var(--joyo-primary);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
 /* 新增行空白单元格提示（spec-16 补充）：浅色提示，引导用户双击填写 */
 .joyo-cell-hint {
   color: #b6bcc6;
