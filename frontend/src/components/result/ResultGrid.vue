@@ -329,11 +329,21 @@ function onContextMenu(event: MouseEvent): void {
   event.preventDefault()
 }
 
+/** 待聚焦的新增行（数据可能尚未渲染，等 replaceData 完成后再落光标） */
+let pendingFocusRow: number | null = null
+
 /** 定位到新增行并直接进入第一个可编辑列的编辑态（新增行后调用） */
 async function focusInsertedRow(rowIndex: number): Promise<void> {
-  if (!table) return
+  if (!table) {
+    pendingFocusRow = rowIndex
+    return
+  }
   const row = table.getRows().find((r) => Number(r.getData().__idx ?? Number.NaN) === rowIndex)
-  if (!row) return
+  if (!row) {
+    // 数据还没进来（replaceData 异步）：记为待处理，由数据 watcher 兜底
+    pendingFocusRow = rowIndex
+    return
+  }
   await table.scrollToRow(row, 'center', false)
   const cols = visibleColumns(props.columns, props.maxColumns)
   const firstEditable = cols.findIndex((col) => canEdit(col))
@@ -428,7 +438,13 @@ watch(
   () => [props.columns, props.rows, props.page, props.pageSize, props.maxColumns, props.changes],
   () => {
     if (!table) return
-    void table.replaceData(buildRows())
+    void table.replaceData(buildRows()).then(() => {
+      // 新增行渲染完成后再落光标（否则取不到 row）
+      const target = pendingFocusRow
+      if (target == null) return
+      pendingFocusRow = null
+      void focusInsertedRow(target)
+    })
   },
 )
 

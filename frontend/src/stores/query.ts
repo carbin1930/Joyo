@@ -326,7 +326,10 @@ export const useQueryStore = defineStore('query', {
       state.unlocked = !state.unlocked
     },
 
-    /** 记录单元格改动（pk 为该行主键原值快照，供生成 WHERE） */
+    /**
+     * 记录单元格改动（pk 为该行主键原值快照，供生成 WHERE）。
+     * 每次改动后**替换 changes 引用**：网格按引用 watch，原地 mutate 不会触发重渲染。
+     */
     recordCell(
       resultTabId: string,
       payload: {
@@ -337,14 +340,9 @@ export const useQueryStore = defineStore('query', {
         pk?: Record<string, string | null>
       },
     ): void {
-      setCell(
-        this.editStateOf(resultTabId),
-        payload.rowIndex,
-        payload.column,
-        payload.value,
-        payload.original,
-        payload.pk,
-      )
+      const state = this.editStateOf(resultTabId)
+      setCell(state, payload.rowIndex, payload.column, payload.value, payload.original, payload.pk)
+      state.changes = { ...state.changes }
     },
 
     markRowDeleted(
@@ -352,15 +350,22 @@ export const useQueryStore = defineStore('query', {
       rowIndex: number,
       pk?: Record<string, string | null>,
     ): void {
-      markDeleted(this.editStateOf(resultTabId), rowIndex, pk)
+      const state = this.editStateOf(resultTabId)
+      markDeleted(state, rowIndex, pk)
+      state.changes = { ...state.changes }
     },
 
     addEditRow(resultTabId: string): number {
-      return addInsertRow(this.editStateOf(resultTabId))
+      const state = this.editStateOf(resultTabId)
+      const rowIndex = addInsertRow(state)
+      state.changes = { ...state.changes }
+      return rowIndex
     },
 
     discardEdits(resultTabId: string): void {
-      discard(this.editStateOf(resultTabId))
+      const state = this.editStateOf(resultTabId)
+      discard(state)
+      state.changes = {}
     },
 
     /** 保存改动：一个事务提交后重跑当前 SQL 刷新结果 */
