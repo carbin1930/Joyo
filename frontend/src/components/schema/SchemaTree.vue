@@ -71,22 +71,48 @@ function onTableClick(schema: string, table: string): void {
   if (tabId) queryStore.setTabDb(tabId, schema)
 }
 
+/** 双击表名的数据预览行数上限（spec-02 补充） */
+const DATA_PREVIEW_LIMIT = 1000
+
+function escapeIdent(name: string): string {
+  return '`' + name.replace(/`/g, '``') + '`'
+}
+
 /**
- * 双击表：把表名插入到 SQL 编辑器光标处。
+ * 双击表名：新建 SQL 页签并直接查看该表数据（默认前 1000 条，spec-02 补充）。
+ * 用带库名的全限定名，避免页签默认库不同导致查错表。
+ */
+async function viewTableData(schema: string, table: string): Promise<void> {
+  const connectionId = activeId.value
+  if (!connectionId) return
+  const tab = queryStore.createTab(connectionId, schema)
+  const sql =
+    'SELECT * FROM ' + escapeIdent(schema) + '.' + escapeIdent(table) + ' LIMIT ' + DATA_PREVIEW_LIMIT
+  queryStore.drafts[tab.id] = sql
+  await queryStore.execute(tab.id, sql)
+}
+
+/**
+ * Ctrl/⌘ + 双击表名：把表名插入到活动 SQL 编辑器光标处（原双击行为，保留为快捷键）。
  * 与活动页签同库：`表名`；跨库：`库名`.`表名`（反引号转义，名字含特殊字符也安全）。
  */
-function onTableDblClick(schema: string, table: string): void {
+function insertTableName(schema: string, table: string): void {
   const tab = queryStore.activeSqlTab
   if (!tab) {
     toast('info', zhCN.schema.dblClickNoTab)
     return
   }
-  const escapedTable = '`' + table.replace(/`/g, '``') + '`'
-  const text =
-    schema === tab.db
-      ? escapedTable
-      : '`' + schema.replace(/`/g, '``') + '`.' + escapedTable
+  const escapedTable = escapeIdent(table)
+  const text = schema === tab.db ? escapedTable : escapeIdent(schema) + '.' + escapedTable
   queryStore.requestInsert(text)
+}
+
+function onTableDblClick(e: MouseEvent, schema: string, table: string): void {
+  if (e.ctrlKey || e.metaKey) {
+    insertTableName(schema, table)
+    return
+  }
+  void viewTableData(schema, table)
 }
 
 function onTableToggle(e: MouseEvent, schema: string, table: string): void {
@@ -147,36 +173,24 @@ function isSelected(schema: string, table: string): boolean {
           <div v-if="schemaStore.filteredEmpty(s.name, filter)" class="tree-empty small">
             {{ zhCN.schema.noMatch }}
           </div>
-          <div
-            v-for="t in schemaStore.filterTables(s.name, filter)"
-            :key="t.name"
-            class="node-row table-row"
-            :class="{ selected: isSelected(s.name, t.name) }"
-            @click="onTableClick(s.name, t.name)"
-            @dblclick="onTableDblClick(s.name, t.name)"
-          >
-            <span class="arrow" @click="onTableToggle($event, s.name, t.name)">
-              {{ tree?.expandedTables[tableKey(s.name, t.name)] ? '▾' : '▸' }}
-            </span>
-            <span class="type-badge" :class="t.type === 'VIEW' ? 'badge-view' : 'badge-table'">
-              {{ t.type === 'VIEW' ? 'V' : 'T' }}
-            </span>
-            <span class="node-name" :title="t.comment || t.name">{{ t.name }}</span>
-            <span v-if="t.rowsEstimate != null" class="rows">{{ t.rowsEstimate }}</span>
-          </div>
+          <!-- 表行 + 紧随其后的列清单（列必须嵌在该表下方，而不是所有表名之后） -->
+          <template v-for="t in schemaStore.filterTables(s.name, filter)" :key="t.name">
+            <div
+              class="node-row table-row"
+              :class="{ selected: isSelected(s.name, t.name) }"
+              @click="onTableClick(s.name, t.name)"
+              @dblclick="onTableDblClick($event, s.name, t.name)"
+            >
+              <span class="arrow" @click="onTableToggle($event, s.name, t.name)">
+                {{ tree?.expandedTables[tableKey(s.name, t.name)] ? '▾' : '▸' }}
+              </span>
+              <span class="type-badge" :class="t.type === 'VIEW' ? 'badge-view' : 'badge-table'">
+                {{ t.type === 'VIEW' ? 'V' : 'T' }}
+              </span>
+              <span class="node-name" :title="t.comment || t.name">{{ t.name }}</span>
+              <span v-if="t.rowsEstimate != null" class="rows">{{ t.rowsEstimate }}</span>
+            </div>
 
-          <div
-            v-if="schemaStore.truncatedCount(s.name, filter) > 0"
-            class="tree-empty small"
-          >
-            {{ zhCN.schema.truncated(TABLE_RENDER_CHUNK, schemaStore.truncatedCount(s.name, filter)) }}
-          </div>
-
-          <!-- 展开的表：列清单 -->
-          <template
-            v-for="t in schemaStore.filterTables(s.name, filter)"
-            :key="`cols-${t.name}`"
-          >
             <div
               v-if="tree?.expandedTables[tableKey(s.name, t.name)]"
               class="columns-block"
@@ -192,11 +206,21 @@ function isSelected(schema: string, table: string): boolean {
                   {{ col.dataType }}{{ col.key === 'PRI' ? ' · PK' : '' }}
                 </span>
               </div>
-              <div v-if="schemaStore.detailLoading" class="tree-empty small">
+              <div
+                v-if="schemaStore.detailLoading && !tree?.detailByKey[tableKey(s.name, t.name)]"
+                class="tree-empty small"
+              >
                 {{ zhCN.schema.loading }}
               </div>
             </div>
           </template>
+
+          <div
+            v-if="schemaStore.truncatedCount(s.name, filter) > 0"
+            class="tree-empty small"
+          >
+            {{ zhCN.schema.truncated(TABLE_RENDER_CHUNK, schemaStore.truncatedCount(s.name, filter)) }}
+          </div>
         </div>
       </div>
     </div>

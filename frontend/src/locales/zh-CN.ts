@@ -130,7 +130,7 @@ export const zhCN = {
     locked: '已锁定',
     editing: '编辑中',
     unlock: '解锁编辑',
-    lock: '锁定',
+    lock: '退出编辑',
     addRow: '新增行',
     deleteRow: '删除行',
     save: '保存',
