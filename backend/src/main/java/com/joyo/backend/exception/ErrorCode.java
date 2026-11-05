@@ -40,8 +40,6 @@ public enum ErrorCode {
     NOT_EDITABLE(4101, "该结果不可编辑（需单表且包含主键列）"),
     /** 数据变更执行失败，message 为 MySQL 原始错误（一请求一事务，失败整体回滚） */
     MUTATION_FAILED(4102, "数据变更执行失败"),
-    /** 主键列不可修改 */
-    PRIMARY_KEY_READONLY(4103, "主键列不可修改"),
 
     // ===== 5xxx 表/数据同步（rest-api.md 第 5 节，spec-17） =====
     /** 表不存在或状态不可比对（compare 用 comparable=false 表达，execute 直接抛） */

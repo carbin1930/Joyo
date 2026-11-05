@@ -113,11 +113,18 @@ class DataEditServiceTest {
     }
 
     @Test
-    void 改主键列返回4103() {
-        BizException e = assertThrows(BizException.class, () -> service.apply("c1",
-                request(new RowChange("update", Map.of("id", "7"), Map.of("id", "8")))));
+    void 改主键列按原主键定位更新() throws Exception {
+        when(ps.executeUpdate()).thenReturn(1);
 
-        assertEquals(ErrorCode.PRIMARY_KEY_READONLY.getCode(), e.getErrorCode().getCode());
+        MutationResponse response = service.apply("c1",
+                request(new RowChange("update", Map.of("id", "7"), Map.of("id", "8"))));
+
+        assertEquals(1, response.applied());
+        // WHERE 用原主键值 7 定位，新主键值 8 进 SET
+        assertEquals("UPDATE `db1`.`users` SET `id` = ? WHERE `id` = ?", capturedSql());
+        verify(ps).setString(1, "8");
+        verify(ps).setString(2, "7");
+        verify(conn).commit();
     }
 
     @Test

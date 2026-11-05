@@ -6,8 +6,8 @@ import { zhCN } from '@/locales/zh-CN'
 
 /**
  * 结果编辑工具栏（spec-16 第 2 节）：
- * 锁定态只显示状态与"解锁编辑"；解锁态提供新增行 / 删除行 / 保存 / 放弃。
- * 不可编辑的结果只显示一行灰字原因。
+ * 锁定态只显示状态与"解锁编辑"；解锁态提供新增行 / 删除行 / 保存 / 放弃 / 锁定（退出编辑，
+ * 未保存改动保留在本地）。不可编辑的结果只显示一行灰字原因。
  */
 
 const props = defineProps<{
@@ -69,6 +69,9 @@ const changeText = computed(() =>
       </el-button>
       <el-button size="small" :disabled="!props.dirty" @click="emit('discard')">
         {{ zhCN.edit.discard }}
+      </el-button>
+      <el-button size="small" data-testid="edit-lock" @click="emit('toggle')">
+        {{ zhCN.edit.lock }}
       </el-button>
       <el-button
         size="small"

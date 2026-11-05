@@ -9,6 +9,7 @@
 - 已完成并合入 main：spec-01 连接管理、spec-02 库表浏览、spec-03 SQL 编辑器（含多 SQL 页签/F13 精简日志/Element Plus 第一批替换，提交 `1f68538`）
 - 当前分支：`main`（与 origin/main 同步，工作区干净）
 - 实机验收：spec-03 增强改动已通过（多 SQL 页签正常；"内部错误 1500" 未再复现）
+- **主键可编辑 + 编辑态"锁定"按钮（2026-11-06）**：①spec-16 4.2 再次修订——解锁后主键列放开编辑（用户诉求），UPDATE 仍以**原主键**定位（前端 `pkSnapshot` 改从基线 rows 取值并按页偏移换算，杜绝"改完主键 WHERE 指错行"），新主键进 SET，冲突走 MySQL 唯一键冲突回滚；后端移除 4103 校验与错误码（`DataEditService`/`ErrorCode`），表头 🔒 标记同步移除。②编辑工具栏解锁态新增"锁定"按钮（`edit-lock`，复用 toggle）——此前解锁后没有任何退出编辑的入口。文档：spec-16 第 2/3/4/5/6 节 + rest-api.md 错误码表已同步
 - **网格编辑触发修复（2026-11-05）**：两处误改库路径——①Tabulator `editTriggerEvent` 默认 `"focus"`，单击/键盘导航聚焦即打开编辑器，表现为"没进编辑状态也能改内容"；②双击处理器用 `cell.edit(true)` 强制编辑会**绕过 editable 判定**，锁定态/主键列也能打字。修复：表选项改 `editTriggerEvent: 'dblclick'`，删除强制编辑，新增行落光标改非强制 `cell.edit()`；spec-04 第 4 节第 6 条、spec-16 第 4 节第 6 条已同步。已有行主键只读是 spec-16 4.2 修订设计（改主键=删+增，后端 4103 兜底），非缺陷
 - **libpng iCCP 警告修复（2026-11-05）**：dev 启动 stderr 出现 5 条 `libpng warning: iCCP` ——根因 `electron.exe` 内嵌默认图标 PNG 带坏 iCCP chunk，Chromium 解码默认图标时告警。修复：新增 `desktop/build/icon.ico`（BMP 格式），主窗/启动画面 dev 模式显式设图标 + electron-builder `win.icon`；完整 dev 验证警告 5→0
 - **查询历史覆盖全部 SQL 操作（2026-11-01）**：新增统一入口 `frontend/src/composables/use-history.ts`（`recordHistory`），除编辑器执行（SELECT/UPDATE/DDL/MULTI/ERROR）外，补齐**网格编辑保存**（EDIT）、**导出**（EXPORT）、**同步比对/执行**（SYNC_COMPARE / SYNC）；失败也记录并带错误信息。元数据浏览与翻页有意不记（工具内部读，避免刷屏），规则写进 spec-05 第 4 节第 6 条

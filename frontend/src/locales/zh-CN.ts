@@ -150,7 +150,6 @@ export const zhCN = {
     newRow: '新',
     /** 新增行空白单元格提示 */
     cellHint: '点击输入',
-    pkReadonly: '已有行的主键不可修改（新增行可填写，自增可留空）',
     selectRowFirst: '请先选中要删除的行',
   },
   query: {

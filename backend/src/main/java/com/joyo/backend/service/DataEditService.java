@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 /**
  * 表数据编辑（spec-16，rest-api.md 第 4 节）：
  * - 语句一律后端生成：{@code PreparedStatement} 参数绑定，标识符经 {@link SqlIdentifiers} 反引号转义
- * - 列名按 information_schema 白名单校验（防注入）；主键列只读（改主键 → 4103）
+ * - 列名按 information_schema 白名单校验（防注入）；主键列可修改（UPDATE 按原主键定位，新值进 SET）
  * - 一个请求一个事务：全部成功 commit，任一条失败 rollback → 4102（message 为 MySQL 原始错误）
  * - UPDATE/DELETE 影响 0 行视为失败（行已被删除或主键值变化），整体回滚
  */
@@ -119,11 +119,8 @@ public class DataEditService {
         if (values.isEmpty()) {
             throw new BizException(ErrorCode.PARAM_INVALID, "修改未包含任何字段");
         }
-        for (String col : values.keySet()) {
-            if (containsIgnoreCase(pk, col)) {
-                throw new BizException(ErrorCode.PRIMARY_KEY_READONLY);
-            }
-        }
+        // 主键列允许出现在 values 中（2026-11-06 修订）：WHERE 仍用 pk 原值定位，
+        // 新主键值进 SET；唯一键冲突由 MySQL 报错 → 整体回滚
         StringBuilder sql = new StringBuilder("UPDATE ").append(qualified(schema, table)).append(" SET ");
         List<String> setColumns = new ArrayList<>(values.keySet());
         sql.append(String.join(", ", setColumns.stream()
@@ -230,10 +227,6 @@ public class DataEditService {
 
     private Map<String, String> nonNull(Map<String, String> map) {
         return map == null ? new LinkedHashMap<>() : map;
-    }
-
-    private boolean containsIgnoreCase(List<String> names, String name) {
-        return names.stream().anyMatch(n -> n.equalsIgnoreCase(name));
     }
 
     private String findIgnoreCase(Map<String, String> map, String key) {

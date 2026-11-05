@@ -125,24 +125,10 @@ const NUMERIC_TYPES = new Set([
   'bit',
 ])
 
-/** 主键列名集合（spec-16：主键列只读） */
-function pkColumns(): Set<string> {
-  return new Set(props.editable?.primaryKey ?? [])
-}
-
 /**
- * 单元格可编辑判定：
- * - 必须已解锁、非二进制列
- * - 主键列：**已有行只读**（改主键会让 UPDATE 定位歧义）；**新增行可填**（自增可留空，非自增/联合主键则需手填）
+ * 列是否可编辑（2026-11-06 修订：主键列也放开）：
+ * 已解锁 + 非二进制列即可编辑；主键列修改后由 UPDATE 按原主键定位（spec-16 4.2）
  */
-function canEditCell(cell: CellComponent, col: ColumnMeta): boolean {
-  if (props.unlocked !== true || isBinaryType(col.type)) return false
-  const rowIndex = Number(cell.getRow().getData().__idx ?? Number.NaN)
-  const isInsertRow = rowIndex < 0
-  return isInsertRow || !pkColumns().has(col.name)
-}
-
-/** 列默认是否可编辑（用于表头提示与定位首个可编辑列；新增行与已有行都会放行非主键列） */
 function canEdit(col: ColumnMeta): boolean {
   return props.unlocked === true && !isBinaryType(col.type)
 }
@@ -261,12 +247,11 @@ function buildColumns(): ColumnDefinition[] {
     headerSort: false,
     cssClass: 'joyo-rownum',
   }
-  const locked = pkColumns()
   const dataColumns = visibleColumns(props.columns, props.maxColumns).map<ColumnDefinition>(
     (col, ci) => ({
-      title: locked.has(col.name) ? `🔒 ${col.name}` : col.name,
+      title: col.name,
       field: `c${ci}`,
-      headerTooltip: locked.has(col.name) ? `${col.type} · ${zhCN.edit.pkReadonly}` : col.type,
+      headerTooltip: col.type,
       minWidth: columnMinWidth(col.type),
       hozAlign: isNumericColumn(col.type) ? 'right' : 'left',
       formatter: (cell: CellComponent) => {
@@ -279,7 +264,7 @@ function buildColumns(): ColumnDefinition[] {
       // 双击进入编辑态：锁定态仅用于选取文本复制（提交后由 cellEdited 还原原值）；解锁态可提交改动
       editor: editorForColumn(col) as ColumnDefinition['editor'],
       selectContents: true,
-      editable: (cell: CellComponent) => canEditCell(cell, col),
+      editable: () => canEdit(col),
     }),
   )
   return [rownum, ...dataColumns]
@@ -321,22 +306,26 @@ function buildRows(): GridRow[] {
   return rows
 }
 
-/** 该行主键列的当前值快照（保存时用于生成 WHERE） */
-function pkSnapshot(data: Record<string, unknown>): Record<string, string | null> {
+/**
+ * 指定全局行号的主键**原值**快照（保存时用于生成 WHERE）。
+ * 从基线 rows 取值而非当前单元格数据：主键列也允许编辑后，
+ * 必须保证改动过程中（甚至主键已改）WHERE 仍定位到原行。
+ */
+function pkSnapshot(rowIndex: number): Record<string, string | null> {
   const cols = visibleColumns(props.columns, props.maxColumns)
+  const local = rowIndex - (props.page - 1) * props.pageSize
+  const row = props.rows[local]
   const snapshot: Record<string, string | null> = {}
   for (const name of props.editable?.primaryKey ?? []) {
     const ci = cols.findIndex((c) => c.name === name)
-    if (ci >= 0) snapshot[name] = (data[`c${ci}`] as string | null) ?? null
+    if (ci >= 0) snapshot[name] = row?.[ci] ?? null
   }
   return snapshot
 }
 
-/** 指定行的主键值快照（删除行时用于生成 WHERE） */
+/** 指定行的主键原值快照（删除行时用于生成 WHERE） */
 function pkOfRow(rowIndex: number): Record<string, string | null> | null {
-  if (!table) return null
-  const row = table.getRows().find((r) => Number(r.getData().__idx ?? Number.NaN) === rowIndex)
-  return row ? pkSnapshot(row.getData() as Record<string, unknown>) : null
+  return pkSnapshot(rowIndex)
 }
 
 /** 当前选中的全局行号（整行选中或单元格选区所在行） */
@@ -506,7 +495,7 @@ onMounted(() => {
   })
 
   // 编辑触发统一交给 Tabulator 的 editTriggerEvent: 'dblclick'（尊重 editable 判定）：
-  // 锁定态/主键列/二进制列双击不会进入编辑器；不再用 cell.edit(true) 强制编辑，
+  // 锁定态/二进制列双击不会进入编辑器；不再用 cell.edit(true) 强制编辑，
   // 否则会绕过 editable 检查，锁定态也能打字改内容
   table.on('cellEdited', (cell: CellComponent) => {
     const oldValue = (cell.getOldValue() as string | null | undefined) ?? null
@@ -527,7 +516,7 @@ onMounted(() => {
       column: col.name,
       value,
       original: oldValue,
-      pk: pkSnapshot(cell.getRow().getData()),
+      pk: pkSnapshot(rowIndex),
     })
   })
   table.on('cellContext', (event: Event, _cell: CellComponent) => {
