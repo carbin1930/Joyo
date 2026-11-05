@@ -101,6 +101,9 @@ function createWindow(): void {
     minHeight: 600,
     title: 'Joyo',
     show: false,
+    // 显式指定干净图标：Electron 默认图标的内嵌 PNG 带错误 sRGB 配置，
+    // 每次启动都会打印 "libpng warning: iCCP: known incorrect sRGB profile"
+    icon: app.isPackaged ? undefined : path.join(__dirname, '../../build/icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, '../preload/preload.js'),
       // 安全模型（overview.md 第 4 节）

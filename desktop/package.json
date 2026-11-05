@@ -48,6 +48,7 @@
     ],
     "win": {
       "target": "nsis",
+      "icon": "build/icon.ico",
       "artifactName": "Joyo-Setup-${version}.${ext}"
     },
     "nsis": {
