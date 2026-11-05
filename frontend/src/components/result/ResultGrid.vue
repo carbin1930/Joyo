@@ -462,7 +462,7 @@ async function doFocus(rowIndex: number): Promise<void> {
   const firstEditable = cols.findIndex((col) => canEdit(col))
   if (firstEditable < 0) return
   const cell = row.getCell(`c${firstEditable}`)
-  if (cell) void cell.edit(true)
+  if (cell) void cell.edit()
 }
 
 /**
@@ -492,6 +492,9 @@ onMounted(() => {
     selectableRange: true,
     selectableRows: true,
     clipboard: false,
+    // 仅双击进入编辑器：默认值 "focus" 会导致单击/键盘导航聚焦即打开编辑器，
+    // 表现为"没进编辑状态也能改内容"，容易误触改库
+    editTriggerEvent: 'dblclick',
     // spec-16：待删除行淡红 + 删除线；新增行左侧蓝色标记条
     rowFormatter: (row: RowComponent) => {
       const rowIndex = Number(row.getData().__idx ?? Number.NaN)
@@ -502,13 +505,9 @@ onMounted(() => {
     },
   })
 
-  // 双击进入编辑态：锁定态仅为复制文本（回车/Esc 退出后还原原值，不写库）；
-  // 解锁态下主键列与二进制列不进入编辑态
-  table.on('cellDblClick', (_event: Event, cell: CellComponent) => {
-    const col = columnOfField(cell.getField())
-    if (props.unlocked && col && !canEditCell(cell, col)) return
-    void cell.edit(true)
-  })
+  // 编辑触发统一交给 Tabulator 的 editTriggerEvent: 'dblclick'（尊重 editable 判定）：
+  // 锁定态/主键列/二进制列双击不会进入编辑器；不再用 cell.edit(true) 强制编辑，
+  // 否则会绕过 editable 检查，锁定态也能打字改内容
   table.on('cellEdited', (cell: CellComponent) => {
     const oldValue = (cell.getOldValue() as string | null | undefined) ?? null
     if (!props.unlocked) {
