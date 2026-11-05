@@ -452,24 +452,26 @@ function onContextMenu(event: MouseEvent): void {
 /** 待聚焦的新增行（数据可能尚未渲染，等 replaceData 完成后再落光标） */
 let pendingFocusRow: number | null = null
 
-/** 定位到新增行并直接进入第一个可编辑列的编辑态（新增行后调用） */
-async function focusInsertedRow(rowIndex: number): Promise<void> {
-  if (!table) {
-    pendingFocusRow = rowIndex
-    return
-  }
+/** 滚动到新增行并进入第一个可编辑列的编辑态（数据已渲染后调用） */
+async function doFocus(rowIndex: number): Promise<void> {
+  if (!table) return
   const row = table.getRows().find((r) => Number(r.getData().__idx ?? Number.NaN) === rowIndex)
-  if (!row) {
-    // 数据还没进来（replaceData 异步）：记为待处理，由数据 watcher 兜底
-    pendingFocusRow = rowIndex
-    return
-  }
+  if (!row) return
   await table.scrollToRow(row, 'center', false)
   const cols = visibleColumns(props.columns, props.maxColumns)
   const firstEditable = cols.findIndex((col) => canEdit(col))
   if (firstEditable < 0) return
   const cell = row.getCell(`c${firstEditable}`)
   if (cell) void cell.edit(true)
+}
+
+/**
+ * 新增行入口（由面板直接调用）：**强制重载整表再落光标**。
+ * 不依赖 changes watcher 是否感知到引用变化，避免"点了新增行没反应"反复回归。
+ */
+function focusInsertedRow(rowIndex: number): void {
+  pendingFocusRow = rowIndex
+  reloadRows()
 }
 
 defineExpose({ copy, selectedRowIndexes, hasSelection, pkOfRow, focusInsertedRow })
@@ -553,7 +555,7 @@ function reloadRows(): void {
     const target = pendingFocusRow
     if (target == null) return
     pendingFocusRow = null
-    void focusInsertedRow(target)
+    void doFocus(target)
   })
 }
 
@@ -613,7 +615,8 @@ watch(
   (next, prev) => {
     if (!table) return
     if (isStructuralChange(prev, next)) {
-      reloadRows()
+      // 新增行已由 focusInsertedRow 强制重载，别重复 replaceData
+      if (pendingFocusRow == null) reloadRows()
       return
     }
     refreshDirtyMarks()
