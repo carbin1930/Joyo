@@ -56,7 +56,8 @@ const props = withDefaults(
   }>(),
   {
     page: 1,
-    pageSize: 100,
+    /** 每页行数固定 200（2026-11-06 移除状态条下拉框后与后端 FIRST_PAGE_SIZE 对齐） */
+    pageSize: 200,
     maxColumns: MAX_RENDERED_COLUMNS,
     editable: null,
     unlocked: false,

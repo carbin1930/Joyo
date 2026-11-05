@@ -130,7 +130,7 @@ export const zhCN = {
     locked: '已锁定',
     editing: '编辑中',
     unlock: '解锁编辑',
-    lock: '退出编辑',
+    lock: '锁定',
     addRow: '新增行',
     deleteRow: '删除行',
     save: '保存',
@@ -150,6 +150,7 @@ export const zhCN = {
     newRow: '新',
     /** 新增行空白单元格提示 */
     cellHint: '点击输入',
+    pkReadonly: '已有行的主键不可修改（新增行可填写，自增可留空）',
     selectRowFirst: '请先选中要删除的行',
   },
   query: {

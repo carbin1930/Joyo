@@ -47,7 +47,7 @@ public class QueryController {
     public ApiResponse<RowsPageResponse> rows(
             @PathVariable String queryId,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "100") int pageSize) {
+            @RequestParam(defaultValue = "200") int pageSize) {
         return ApiResponse.ok(resultCache.page(queryId, page, pageSize));
     }
 }

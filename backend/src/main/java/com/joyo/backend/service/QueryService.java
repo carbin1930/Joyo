@@ -35,8 +35,8 @@ public class QueryService {
 
     private static final Logger log = LoggerFactory.getLogger(QueryService.class);
 
-    /** rest-api.md 约定：首屏分页大小 */
-    private static final int FIRST_PAGE_SIZE = 100;
+    /** 首屏分页大小（2026-11-06 由 100 调整为 200，与状态条固定每页行数一致） */
+    private static final int FIRST_PAGE_SIZE = 200;
 
     private final ConnectionService connectionService;
     private final QueryResultCache resultCache;

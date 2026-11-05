@@ -10,7 +10,7 @@
 - 所有请求（含 `/health`）必须携带请求头 `X-Joyo-Token: {main进程下发的token}`
 - 统一 HTTP 200 + 业务码：`{ "code": 0, "message": "ok", "data": ... }`
 - 时间戳：ISO-8601 UTC（`2026-10-15T10:00:00Z`）
-- 分页参数：`page`（1 起）、`pageSize`（默认 100）
+- 分页参数：`page`（1 起）、`pageSize`（默认 200，2026-11-06 由 100 调整）
 
 ## 1. 系统
 
@@ -201,7 +201,7 @@ interface SaveConnectionInput {
       "totalRows": 1024,
       "truncated": false,
       "rows": [ ["1", "alice"], ["2", null] ],
-      "page": 1, "pageSize": 100,
+      "page": 1, "pageSize": 200,
       "elapsedMs": 12,
       "editable": { "schema": "joyo", "table": "user", "primaryKey": ["id"] }
     },
@@ -218,7 +218,7 @@ interface SaveConnectionInput {
 - `editable`（spec-16）：仅 SELECT 附带，为 null 表示不可编辑。判定：所有列 `ResultSetMetaData.getTableName()` 相同且非空（单表）+ 主键列（information_schema `COLUMN_KEY='PRI'`）**全部出现在结果列中**；否则 null
 - 失败语句抛业务错误（见错误码 3xxx），后端**中止后续语句**；已成功语句不返回（v0.1 简化：整体失败，不返回部分结果）
 
-### GET /queries/{queryId}/rows?page=1&pageSize=100
+### GET /queries/{queryId}/rows?page=1&pageSize=200
 
 结果翻页。返回 data：`{ "queryId", "rows", "page", "pageSize", "totalKnown", "totalRows" }`。
 

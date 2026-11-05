@@ -3,7 +3,8 @@ import { zhCN } from '@/locales/zh-CN'
 
 /**
  * 结果状态条（spec-04 第 2 节）：
- * 共 N 行 · 耗时 ms | 截断/隐藏列提示 | 排序仅本页 | 页码控件 | 每页行数。
+ * 共 N 行 · 耗时 ms | 截断/隐藏列提示 | 排序仅本页 | 页码控件。
+ * 每页行数固定 200（2026-11-06 移除下拉框：与"行数限制"职责重叠，收益低且易混淆）。
  */
 
 const props = defineProps<{
@@ -12,21 +13,12 @@ const props = defineProps<{
   truncated: boolean
   hiddenCols: number
   page: number
-  pageSize: number
   totalPages: number
 }>()
 
 const emit = defineEmits<{
   page: [page: number]
-  pageSize: [size: number]
 }>()
-
-/** 每页行数选项（后端上限 1000） */
-const PAGE_SIZES = [50, 100, 200, 500]
-
-function changePageSize(size: number): void {
-  if (size !== props.pageSize) emit('pageSize', size)
-}
 </script>
 
 <template>
@@ -53,17 +45,6 @@ function changePageSize(size: number): void {
         ▶
       </button>
     </span>
-    <label class="page-size">
-      {{ zhCN.query.pageSizeLabel }}
-      <el-select
-        :model-value="props.pageSize"
-        size="small"
-        style="width: 78px"
-        @change="changePageSize"
-      >
-        <el-option v-for="size in PAGE_SIZES" :key="size" :label="String(size)" :value="size" />
-      </el-select>
-    </label>
   </div>
 </template>
 
@@ -129,11 +110,5 @@ function changePageSize(size: number): void {
 .page-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-.page-size {
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 </style>

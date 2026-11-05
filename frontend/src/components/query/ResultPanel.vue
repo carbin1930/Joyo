@@ -31,7 +31,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [tabId: string]
   page: [tab: ResultTab, page: number]
-  pageSize: [tab: ResultTab, size: number]
 }>()
 
 const activeTab = computed(() => props.tabs.find((t) => t.id === props.activeTabId) ?? null)
@@ -80,9 +79,7 @@ function onStatusPage(page: number): void {
   if (activeTab.value) emit('page', activeTab.value, page)
 }
 
-function onStatusPageSize(size: number): void {
-  if (activeTab.value) emit('pageSize', activeTab.value, size)
-}
+/** 每页行数固定 200（2026-11-06 移除状态条下拉框），仍保留 store 的 changePageSize 以备将来做设置项 */
 
 // ===== 表数据编辑（spec-16） =====
 
@@ -192,10 +189,8 @@ function totalPages(tab: ResultTab): number {
             :truncated="activeTab.statement.truncated ?? false"
             :hidden-cols="hiddenCols"
             :page="activeTab.statement.page ?? 1"
-            :page-size="activeTab.statement.pageSize ?? 100"
             :total-pages="totalPages(activeTab)"
             @page="onStatusPage"
-            @page-size="onStatusPageSize"
           />
           <!-- spec-16：仅 SELECT 结果出现编辑工具栏（不可编辑时显示原因） -->
           <ResultEditToolbar
@@ -217,7 +212,7 @@ function totalPages(tab: ResultTab): number {
               :columns="activeTab.statement.columns ?? []"
               :rows="activeTab.statement.rows ?? []"
               :page="activeTab.statement.page ?? 1"
-              :page-size="activeTab.statement.pageSize ?? 100"
+              :page-size="activeTab.statement.pageSize ?? 200"
               :editable="editable"
               :unlocked="editState?.unlocked ?? false"
               :changes="editState?.changes ?? {}"

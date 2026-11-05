@@ -317,7 +317,6 @@ function closeTab(e: MouseEvent, id: string): void {
               :executing="queryStore.executing"
               @select="queryStore.activeResultByTab[activeTab.id] = $event"
               @page="(tab, page) => queryStore.changePage(tab, page)"
-              @page-size="(tab, size) => queryStore.changePageSize(tab, size)"
             />
           </div>
         </div>
