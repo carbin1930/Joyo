@@ -546,25 +546,77 @@ onMounted(() => {
 })
 
 // 列结构变化（列/上限/解锁态）才重建列，避免改动单元格时列宽与滚动被重置
+/** 重载行数据并在新增行渲染完成后落光标 */
+function reloadRows(): void {
+  if (!table) return
+  void table.replaceData(buildRows()).then(() => {
+    const target = pendingFocusRow
+    if (target == null) return
+    pendingFocusRow = null
+    void focusInsertedRow(target)
+  })
+}
+
+/** 只刷新脏标记：值改动用格子自身 setValue 已绘制，整表重载会打断输入 */
+function refreshDirtyMarks(): void {
+  if (!table) return
+  const cols = visibleColumns(props.columns, props.maxColumns)
+  for (const row of table.getRows()) {
+    const rowIndex = Number(row.getData().__idx ?? Number.NaN)
+    if (Number.isNaN(rowIndex)) continue
+    for (let ci = 0; ci < cols.length; ci += 1) {
+      const cell = row.getCell(`c${ci}`)
+      if (!cell) continue
+      cell.getElement().classList.toggle('joyo-cell-dirty', isDirtyCell(rowIndex, cols[ci].name))
+    }
+  }
+}
+
+/**
+ * changes 是否发生了**结构性**变化（新增行增减、删除标记切换、放弃改动）。
+ * 仅单元格值变化不重建表格——否则输入过程中编辑器被销毁，表现为"打不进字"。
+ */
+function isStructuralChange(
+  prev: Record<number, RowChange> | undefined,
+  next: Record<number, RowChange> | undefined,
+): boolean {
+  const before = prev ?? {}
+  const after = next ?? {}
+  const beforeKeys = Object.keys(before)
+  const afterKeys = Object.keys(after)
+  if (beforeKeys.length !== afterKeys.length) return true
+  for (const key of afterKeys) {
+    const old = before[Number(key)]
+    if (!old) return true
+    if (old.kind !== after[Number(key)].kind) return true
+  }
+  return false
+}
+
 watch(
   () => [props.columns, props.maxColumns, props.unlocked],
   () => {
     if (!table) return
     table.setColumns(buildColumns())
+    // 列重建后脏标记与合并值都要重画
+    refreshDirtyMarks()
   },
 )
 
 watch(
-  () => [props.columns, props.rows, props.page, props.pageSize, props.maxColumns, props.changes],
-  () => {
+  () => [props.columns, props.rows, props.page, props.pageSize, props.maxColumns],
+  () => reloadRows(),
+)
+
+watch(
+  () => props.changes,
+  (next, prev) => {
     if (!table) return
-    void table.replaceData(buildRows()).then(() => {
-      // 新增行渲染完成后再落光标（否则取不到 row）
-      const target = pendingFocusRow
-      if (target == null) return
-      pendingFocusRow = null
-      void focusInsertedRow(target)
-    })
+    if (isStructuralChange(prev, next)) {
+      reloadRows()
+      return
+    }
+    refreshDirtyMarks()
   },
 )
 
