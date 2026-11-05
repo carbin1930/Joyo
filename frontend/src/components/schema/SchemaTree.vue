@@ -71,8 +71,12 @@ function onTableClick(schema: string, table: string): void {
   if (tabId) queryStore.setTabDb(tabId, schema)
 }
 
-/** 双击表名的数据预览行数上限（spec-02 补充） */
-const DATA_PREVIEW_LIMIT = 1000
+/**
+ * 双击表名的数据预览行数（spec-02 补充，2026-11-06 定为 200）：
+ * 200 与 DBeaver/DataGrip 默认抓取量级一致，首屏快（宽表/BLOB 尤其明显），
+ * 且远小于「行数限制」默认 1000，不会因截断导致预览结果不可编辑。
+ */
+const DATA_PREVIEW_LIMIT = 200
 
 function escapeIdent(name: string): string {
   return '`' + name.replace(/`/g, '``') + '`'
